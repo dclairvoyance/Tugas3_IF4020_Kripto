@@ -159,6 +159,19 @@ def add_round_key(input_hex, key):
   result_hex = bytes(result_hex).hex()
   return result_hex
 
+def xor_key(input_hex, key_hex):
+  result_hex = bytearray(len(key_hex) // 2)
+  for i in range(0,len(key_hex), 2):
+    result_hex[i // 2] = int(input_hex[i:i+2], 16) ^ int(key_hex[i:i+2], 16)
+
+  result_hex = bytes(result_hex).hex()
+  return result_hex
+
+def string_padding(input_string):
+  padding = len(input_string) % 16
+  if padding != 0:
+    input_string += "Z" * (16-padding)
+  return input_string
 
 def string_to_hex(input_string):
   hex_result = input_string.encode('utf-8').hex()  # Convert the chunk to hexadecimal representation # Append the hexadecimal representation to the list
@@ -169,7 +182,7 @@ def hex_to_string(hex_string):
     hex_string = hex_string.replace(" ", "").lower()
 
     # Convert pairs of hexadecimal characters to bytes and then decode to a string
-    normal_string = bytearray.fromhex(hex_string).decode('utf-8', errors='ignore')
+    normal_string = bytearray.fromhex(hex_string).decode('utf-8')
 
     return normal_string
 
@@ -191,7 +204,16 @@ def sbox_decrypt(input_hex):
     output_hex += result_hex
   return output_hex
 
-def encrypt(input_hex, key, round):
+def add_count(input_hex):
+  result_hex = bytearray(len(input_hex) // 2)
+  for i in range(0,len(input_hex), 2):
+    result_hex[i // 2] = (int(input_hex[i:i+2], 16) + 1) % 16
+
+  result_hex = bytes(result_hex).hex()
+  return result_hex
+
+
+def ecb_encrypt(input_hex, key, round):
   encrypted_hex = ""
   expanded_key = key_expansion(key,round)
   for i in range(0, len(input_hex), 32):
@@ -209,7 +231,7 @@ def encrypt(input_hex, key, round):
     encrypted_hex += result_hex
   return encrypted_hex
 
-def decrypt(input_hex, key, round):
+def ecb_decrypt(input_hex, key, round):
   decrypted_hex = ""
   expanded_key = key_expansion(key,round)
   for i in range(0, len(input_hex), 32):
@@ -227,18 +249,187 @@ def decrypt(input_hex, key, round):
     decrypted_hex += result_hex
   return decrypted_hex
 
+def cbc_encrypt(input_hex, key, round):
+  encrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    chunk = input_hex[i:i+32]
+    result_hex = xor_key(chunk, init_vector)
+    result_hex = add_round_key(result_hex,expanded_key[0:16])
+
+    j = 1
+    while(j<=round):
+      result_hex = sbox_encrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = lazi_encrypt(result_hex)
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      j+=1
+
+    init_vector = result_hex
+    encrypted_hex += result_hex
+  return encrypted_hex
+
+def cbc_decrypt(input_hex, key, round):
+  decrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    result_hex = input_hex[i:i+32]
+
+    j = round
+    while(j>0):
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      result_hex = lazi_decrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = sbox_decrypt(result_hex)
+      j-=1
+
+    result_hex = add_round_key(result_hex,expanded_key[0:16])
+    result_hex = xor_key(result_hex, init_vector)
+    init_vector = input_hex[i:i+32]
+    decrypted_hex += result_hex
+  return decrypted_hex
+
+def cfb_encrypt(input_hex, key, round):
+  encrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    chunk = init_vector
+    result_hex = add_round_key(chunk,expanded_key[0:16])
+
+    j = 1
+    while(j<=round):
+      result_hex = sbox_encrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = lazi_encrypt(result_hex)
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      j+=1
+
+    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    init_vector = result_hex
+    encrypted_hex += result_hex
+  return encrypted_hex
+
+def cfb_decrypt(input_hex, key, round):
+  decrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    chunk = init_vector
+    result_hex = add_round_key(chunk,expanded_key[0:16])
+
+    j = 1
+    while(j<=round):
+      result_hex = sbox_encrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = lazi_encrypt(result_hex)
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      j+=1
+
+    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    init_vector = input_hex[i:i+32]
+    decrypted_hex += result_hex
+  return decrypted_hex
+
+def ofb_encrypt(input_hex, key, round):
+  encrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    chunk = init_vector
+    result_hex = add_round_key(chunk,expanded_key[0:16])
+
+    j = 1
+    while(j<=round):
+      result_hex = sbox_encrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = lazi_encrypt(result_hex)
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      j+=1
+
+    init_vector = result_hex
+    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    encrypted_hex += result_hex
+  return encrypted_hex
+
+def ofb_decrypt(input_hex, key, round):
+  decrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    chunk = init_vector
+    result_hex = add_round_key(chunk,expanded_key[0:16])
+
+    j = 1
+    while(j<=round):
+      result_hex = sbox_encrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = lazi_encrypt(result_hex)
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      j+=1
+
+    init_vector = result_hex
+    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    decrypted_hex += result_hex
+  return decrypted_hex
+
+def counter_encrypt(input_hex, key, round):
+  encrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    chunk = init_vector
+    result_hex = add_round_key(chunk,expanded_key[0:16])
+
+    j = 1
+    while(j<=round):
+      result_hex = sbox_encrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = lazi_encrypt(result_hex)
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      j+=1
+
+    init_vector = add_count(init_vector)
+    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    encrypted_hex += result_hex
+  return encrypted_hex
+
+def counter_decrypt(input_hex, key, round):
+  decrypted_hex = ""
+  expanded_key = key_expansion(key,round)
+  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  for i in range(0, len(input_hex), 32):
+    chunk = init_vector
+    result_hex = add_round_key(chunk,expanded_key[0:16])
+
+    j = 1
+    while(j<=round):
+      result_hex = sbox_encrypt(result_hex)
+      result_hex = flip_row(result_hex)
+      result_hex = lazi_encrypt(result_hex)
+      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+      j+=1
+
+    init_vector = add_count(init_vector)
+    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    decrypted_hex += result_hex
+  return decrypted_hex
+
 # key = 16, round = 10
 # key = 24, round = 12
 # key = 32, round = 14
 # key = 32, round = 16
-# input string kelipatan 16 (harus ada kode padding nanti)
 
 # apa itu key expansion wkwk
 
-input_string = "hellothisisaverylongstringplsworklolIdontknowanymoreabcdhaaaddddjfskejfowkdjfkda"
+input_string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum. Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of \"de Finibus Bonorum et Malorum\" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, \"Lorem ipsum dolor sit amet..\", comes from a line in section 1.10.32."
+# input_string = "abcde"
 # key_string = "jKPmNqXoRvSbTdUw"
 # key_string = "ZxRyTbDmFpHqWsEuJiOkLxNa"
 key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
+input_string = string_padding(input_string)
 input = string_to_hex(input_string)
 print(len(key_expander))
 print("key length: " + str(len(key_string)))
@@ -249,11 +440,14 @@ print("length: " + str(len(input)))
 print("input: " + input_string)
 print("hex input: " + input)
 
-encrypt_result = encrypt(input, key_string, 16)
+encrypt_result = counter_encrypt(input, key_string, 16)
 print("encrypt result: " + encrypt_result)
 
-decrypt_result = decrypt(encrypt_result, key_string, 16)
+decrypt_result = counter_decrypt(encrypt_result, key_string, 16)
 print("decrypt result: " + decrypt_result)
 
 result = hex_to_string(decrypt_result)
 print("result: " + result)
+
+if(result == input_string):
+  print("final check: complete")
