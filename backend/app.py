@@ -19,7 +19,7 @@ def authors():
     )
 
 @app.route("/delazi_encrypt", methods=['POST'])
-def ecb_encrypt_api():
+def delazi_encrypt_api():
     plaintext = request.json["plaintext"]
     key = request.json["key"]
     round = request.json["round"]
@@ -45,7 +45,7 @@ def ecb_encrypt_api():
     )
 
 @app.route("/delazi_decrypt", methods=['POST'])
-def ecb_decrypt_api():
+def delazi_decrypt_api():
     ciphertext = request.json["ciphertext"]
     key = request.json["key"]
     round = request.json["round"]

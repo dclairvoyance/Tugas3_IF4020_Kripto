@@ -309,7 +309,9 @@ def ecb_decrypt(input, external_key, round):
   return decrypted_hex
 
 # cbc mode: encrypt
-def cbc_encrypt(input_hex, external_key_hex, round):
+def cbc_encrypt(input, external_key, round):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   # vector_hex = IV for first block
@@ -337,7 +339,9 @@ def cbc_encrypt(input_hex, external_key_hex, round):
   return encrypted_hex
 
 # cbc mode: decrypt
-def cbc_decrypt(input_hex, external_key_hex, round):
+def cbc_decrypt(input, external_key, round):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   vector_hex = INIT_VECTOR_HEX
@@ -364,7 +368,9 @@ def cbc_decrypt(input_hex, external_key_hex, round):
   return decrypted_hex
 
 # cfb mode: encrypt
-def cfb_encrypt(input_hex, external_key_hex, round, cfb_size):
+def cfb_encrypt(input, external_key, round, cfb_size):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   vector_hex = INIT_VECTOR_HEX
@@ -390,7 +396,9 @@ def cfb_encrypt(input_hex, external_key_hex, round, cfb_size):
   return encrypted_hex
 
 # cfb mode: decrypt
-def cfb_decrypt(input_hex, external_key_hex, round, cfb_size):
+def cfb_decrypt(input, external_key, round, cfb_size):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   vector_hex = INIT_VECTOR_HEX
@@ -415,7 +423,9 @@ def cfb_decrypt(input_hex, external_key_hex, round, cfb_size):
   return decrypted_hex
 
 # ofb mode: encrypt
-def ofb_encrypt(input_hex, external_key_hex, round, ofb_size):
+def ofb_encrypt(input, external_key, round, ofb_size):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   vector_hex = INIT_VECTOR_HEX
@@ -440,7 +450,9 @@ def ofb_encrypt(input_hex, external_key_hex, round, ofb_size):
   return encrypted_hex
 
 # ofb mode: decrypt
-def ofb_decrypt(input_hex, external_key_hex, round, ofb_size):
+def ofb_decrypt(input, external_key, round, ofb_size):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   vector_hex = INIT_VECTOR_HEX
@@ -465,7 +477,9 @@ def ofb_decrypt(input_hex, external_key_hex, round, ofb_size):
   return decrypted_hex
 
 # counter mode: encrypt
-def counter_encrypt(input_hex, external_key_hex, round):
+def counter_encrypt(input, external_key, round):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   init_vector_hex = INIT_VECTOR_HEX
@@ -488,7 +502,9 @@ def counter_encrypt(input_hex, external_key_hex, round):
   return encrypted_hex
 
 # counter mode: decrypt
-def counter_decrypt(input_hex, external_key_hex, round):
+def counter_decrypt(input, external_key, round):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   init_vector_hex = INIT_VECTOR_HEX
