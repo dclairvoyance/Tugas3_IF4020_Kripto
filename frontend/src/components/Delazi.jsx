@@ -228,7 +228,7 @@ const Delazi = () => {
               Mode
             </h2>
             {/* mode picker */}
-            <ul className="lg:flex items-center text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50">
+            <ul className="mb-1 lg:flex items-center text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50">
               <li className="w-full lg:border-r border-b border-primary_3">
                 <div className="flex items-center px-3 h-8">
                   <input
@@ -317,19 +317,20 @@ const Delazi = () => {
             <h3 className="h-8 items-center ml-1 flex text-md text-white">
               Key
             </h3>
-            <div className="flex-col mx-1 mb-3">
-              <input
+            <div className="flex-col mx-1 mb-1">
+              <textarea
                 id="key"
+                rows="2"
                 className="w-full p-1.5 text-lg text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50"
-                placeholder="Key"
+                placeholder="Write key here..."
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-              ></input>
+              ></textarea>
             </div>
 
             {/* byte size picker */}
             {(mode === "cfb" || mode === "ofb") && (
-              <div className="mx-1 mb-2">
+              <div className="mx-1 mb-3">
                 <h3 className="h-full mb-1 items-center flex text-md text-white">
                   OFB/CFB Byte Size
                 </h3>
