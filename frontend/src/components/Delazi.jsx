@@ -17,7 +17,10 @@ const Delazi = () => {
   const outputTextArea = useRef(null);
 
   const [key, setKey] = useState("");
+  
   const [mode, setMode] = useState("ecb");
+  const [keyLength, setKeyLength] = useState("128");
+  const [rounds, setRounds] = useState("14");
   const [round, setRound] = useState(16);
   const [size, setSize] = useState(2);
 
@@ -308,10 +311,90 @@ const Delazi = () => {
           </div>
 
           {/* settings */}
-          <div className="basis-2/12 flex-col mx-1">
+          <div className="basis-2/12 flex-col mx-1">            
             <h2 className="h-8 items-center flex text-lg font-semibold text-white">
               Settings
             </h2>
+
+            {/* Karunia */}
+            {/* Select Key Length */}
+            <h2 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg font-semibold text-white">Key Size in Byte:</h2>
+            <div className="flex items-center space-x-4">
+              <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">
+                <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="128"
+                      checked={keyLength === "128"}
+                      onChange={(e) => setKeyLength(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">128</span>
+                  </label>
+                </li>
+                <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="192"
+                      checked={keyLength === "192"}
+                      onChange={(e) => setKeyLength(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">192</span>
+                  </label>
+                </li>
+                <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="256"
+                      checked={keyLength === "256"}
+                      onChange={(e) => setKeyLength(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">256</span>
+                  </label>
+                </li>
+              </ul>
+            </div>
+
+            {/* Select Rounds for 256-bit Key */}
+            {keyLength === "256" && (
+              <div className="mt-4">
+                <h3 className="h-8 items-center ml-1 flex text-lg font-semibold text-white">Rounds:</h3>
+                <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">                                      
+                  <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="14"
+                        checked={rounds === "14"}
+                        onChange={(e) => setRounds(e.target.value)}
+                        className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-white ml-2">14</span>
+                    </label>  
+                  </li>
+                  
+                  <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        value="16"
+                        checked={rounds === "16"}
+                        onChange={(e) => setRounds(e.target.value)}
+                        className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-white ml-2">16</span>
+                    </label>
+                  </li>                                                                       
+                </ul>                
+              </div>
+            )}
+
+            {/* Karunia */}
 
             {/* key */}
             <h3 className="h-8 items-center ml-1 flex text-md text-white">
@@ -327,7 +410,7 @@ const Delazi = () => {
                 onChange={(e) => setKey(e.target.value)}
               ></textarea>
             </div>
-
+        
             {/* byte size picker */}
             {(mode === "cfb" || mode === "ofb") && (
               <div className="mx-1 mb-3">
