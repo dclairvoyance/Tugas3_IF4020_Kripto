@@ -16,6 +16,10 @@ const Delazi = () => {
   const [userOutput, setUserOutput] = useState("");
   const outputTextArea = useRef(null);
 
+  const [encryptionMode, setEncryptionMode] = useState("ecb");
+  const [cfbBitSize, setCfbBitSize] = useState("2");
+  const [ofbBitSize, setOfbBitSize] = useState("2");
+
   const [key, setKey] = useState("");
   const [mode, setMode] = useState("ecb");
   const [round, setRound] = useState(16);
@@ -227,6 +231,100 @@ const Delazi = () => {
 
           {/* key */}
           <div className="basis-2/12 flex-col mx-1">
+            {/* Select Mode */}
+            <h2 className="h-8 items-center mb-4 flex text-lg font-semibold text-white">Select Mode:</h2>
+            <select
+              value={encryptionMode}
+              onChange={(e) => setEncryptionMode(e.target.value)}
+              className="border rounded-md p-2 bg-primary_2 rounded-md border border-primary_3 text-white-800 focus:outline-none focus:ring-2 focus:ring-blue-50"
+            >
+              <option value="ecb" >ECB</option>
+              <option value="cbc">CBC</option>
+              <option value="cfb">CFB</option>
+              <option value="ofb">OFB</option>
+              <option value="ctr">CTR</option>
+            </select>
+
+            {encryptionMode === "cfb" && (
+              <div className="mt-3">
+                <h3 className="h-8 items-center ml-1 mt-3 flex text-lg font-semibold text-white">Select CFB Bit Size:</h3>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="2"
+                      checked={cfbBitSize === "2"}
+                      onChange={(e) => setCfbBitSize(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">2 bit</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="4"
+                      checked={cfbBitSize === "4"}
+                      onChange={(e) => setCfbBitSize(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">4 bit</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="8"
+                      checked={cfbBitSize === "8"}
+                      onChange={(e) => setCfbBitSize(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">8 bit</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+
+            {encryptionMode === "ofb" && (
+              <div className="mb-4">
+                <h2 className="h-8 items-center ml-1 mt-4 flex text-lg font-semibold text-white">Select OFB Bit Size:</h2>
+                <div className="flex items-center space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="2"
+                      checked={ofbBitSize === "2"}
+                      onChange={(e) => setOfbBitSize(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">2 bit</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="4"
+                      checked={ofbBitSize === "4"}
+                      onChange={(e) => setOfbBitSize(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">4 bit</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      value="8"
+                      checked={ofbBitSize === "8"}
+                      onChange={(e) => setOfbBitSize(e.target.value)}
+                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-white ml-2">8 bit</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Select Mode */}
+
+
             <h2 className="h-8 items-center ml-1 mb-2 flex text-lg font-semibold text-white">
               Key
             </h2>
