@@ -24,7 +24,8 @@ def delazi_encrypt_api():
     key = request.json["key"]
     round = request.json["round"]
     mode = request.json["mode"]
-    size = request.json["size"]
+    if (mode == "ofb" or mode == "cfb"):
+        size = request.json["size"]
     if (mode == "ecb"):
         encrypted = ecb_encrypt(plaintext, key, round)
     elif (mode == "cbc"):
@@ -50,7 +51,8 @@ def delazi_decrypt_api():
     key = request.json["key"]
     round = request.json["round"]
     mode = request.json["mode"]
-    size = request.json["size"]
+    if (mode == "ofb" or mode == "cfb"):
+        size = request.json["size"]
     if (mode == "ecb"):
         decrypted = ecb_decrypt(ciphertext, key, round)
     elif (mode == "cbc"):

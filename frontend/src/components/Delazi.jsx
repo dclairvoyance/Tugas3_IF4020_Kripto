@@ -16,10 +16,6 @@ const Delazi = () => {
   const [userOutput, setUserOutput] = useState("");
   const outputTextArea = useRef(null);
 
-  const [encryptionMode, setEncryptionMode] = useState("ecb");
-  const [cfbBitSize, setCfbBitSize] = useState("2");
-  const [ofbBitSize, setOfbBitSize] = useState("2");
-
   const [key, setKey] = useState("");
   const [mode, setMode] = useState("ecb");
   const [round, setRound] = useState(16);
@@ -68,7 +64,7 @@ const Delazi = () => {
           key: key,
           round: round,
           mode: mode,
-          size: size,
+          ...((mode === "cfb" || mode === "ofb") && { size: size }),
         }),
       });
       const data = await response.json();
@@ -134,7 +130,7 @@ const Delazi = () => {
           key: key,
           round: round,
           mode: mode,
-          size: size,
+          ...((mode === "cfb" || mode === "ofb") && { size: size }),
         }),
       });
 
@@ -227,107 +223,100 @@ const Delazi = () => {
                 fileName={fileInputName}
               />
             )}
+
+            <h2 className="h-8 items-center ml-1 mb-1 flex text-lg font-semibold text-white">
+              Mode
+            </h2>
+            {/* mode picker */}
+            <ul className="lg:flex items-center text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50">
+              <li className="w-full lg:border-r border-b border-primary_3">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="list-ecb"
+                    type="radio"
+                    value="ecb"
+                    className="w-4"
+                    checked={mode === "ecb"}
+                    onChange={(e) => setMode(e.target.value)}
+                  />
+                  <label htmlFor="list-ecb" className="w-full ms-2 text-sm">
+                    ECB
+                  </label>
+                </div>
+              </li>
+              <li className="w-full lg:border-r border-b border-primary_3">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="list-cbc"
+                    type="radio"
+                    value="cbc"
+                    className="w-4"
+                    checked={mode === "cbc"}
+                    onChange={(e) => setMode(e.target.value)}
+                  />
+                  <label htmlFor="list-cbc" className="w-full ms-2 text-sm">
+                    CBC
+                  </label>
+                </div>
+              </li>
+              <li className="w-full lg:border-r border-b border-primary_3">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="list-ofb"
+                    type="radio"
+                    value="ofb"
+                    className="w-4"
+                    checked={mode === "ofb"}
+                    onChange={(e) => setMode(e.target.value)}
+                  />
+                  <label htmlFor="list-ofb" className="w-full ms-2 text-sm">
+                    OFB
+                  </label>
+                </div>
+              </li>
+              <li className="w-full lg:border-r border-b border-primary_3">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="list-cfb"
+                    type="radio"
+                    value="cfb"
+                    className="w-4"
+                    checked={mode === "cfb"}
+                    onChange={(e) => setMode(e.target.value)}
+                  />
+                  <label htmlFor="list-cfb" className="w-full ms-2 text-sm">
+                    CFB
+                  </label>
+                </div>
+              </li>
+              <li className="w-full">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="list-ctr"
+                    type="radio"
+                    value="counter"
+                    className="w-4"
+                    checked={mode === "counter"}
+                    onChange={(e) => setMode(e.target.value)}
+                  />
+                  <label htmlFor="list-ctr" className="w-full ms-2 text-sm">
+                    Counter
+                  </label>
+                </div>
+              </li>
+            </ul>
           </div>
 
-          {/* key */}
+          {/* settings */}
           <div className="basis-2/12 flex-col mx-1">
-            {/* Select Mode */}
-            <h2 className="h-8 items-center mb-4 flex text-lg font-semibold text-white">Select Mode:</h2>
-            <select
-              value={encryptionMode}
-              onChange={(e) => setEncryptionMode(e.target.value)}
-              className="border rounded-md p-2 bg-primary_2 rounded-md border border-primary_3 text-white-800 focus:outline-none focus:ring-2 focus:ring-blue-50"
-            >
-              <option value="ecb" >ECB</option>
-              <option value="cbc">CBC</option>
-              <option value="cfb">CFB</option>
-              <option value="ofb">OFB</option>
-              <option value="ctr">CTR</option>
-            </select>
-
-            {encryptionMode === "cfb" && (
-              <div className="mt-3">
-                <h3 className="h-8 items-center ml-1 mt-3 flex text-lg font-semibold text-white">Select CFB Bit Size:</h3>
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="2"
-                      checked={cfbBitSize === "2"}
-                      onChange={(e) => setCfbBitSize(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-white ml-2">2 bit</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="4"
-                      checked={cfbBitSize === "4"}
-                      onChange={(e) => setCfbBitSize(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-white ml-2">4 bit</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="8"
-                      checked={cfbBitSize === "8"}
-                      onChange={(e) => setCfbBitSize(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-white ml-2">8 bit</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
-
-            {encryptionMode === "ofb" && (
-              <div className="mb-4">
-                <h2 className="h-8 items-center ml-1 mt-4 flex text-lg font-semibold text-white">Select OFB Bit Size:</h2>
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="2"
-                      checked={ofbBitSize === "2"}
-                      onChange={(e) => setOfbBitSize(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-white ml-2">2 bit</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="4"
-                      checked={ofbBitSize === "4"}
-                      onChange={(e) => setOfbBitSize(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-white ml-2">4 bit</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="8"
-                      checked={ofbBitSize === "8"}
-                      onChange={(e) => setOfbBitSize(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-white ml-2">8 bit</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {/* Select Mode */}
-
-
-            <h2 className="h-8 items-center ml-1 mb-2 flex text-lg font-semibold text-white">
-              Key
+            <h2 className="h-8 items-center flex text-lg font-semibold text-white">
+              Settings
             </h2>
+
+            {/* key */}
+            <h3 className="h-8 items-center ml-1 flex text-md text-white">
+              Key
+            </h3>
             <div className="flex-col mx-1 mb-3">
               <input
                 id="key"
@@ -338,84 +327,59 @@ const Delazi = () => {
               ></input>
             </div>
 
-            {/* mode picker */}
-            <ul className="mx-1 mb-3 text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50">
-              <li className="w-full border-b border-primary_3 rounded-t-md">
-                <div className="flex items-center px-3 h-9">
-                  <input
-                    id="list-ecb"
-                    type="radio"
-                    value="ecb"
-                    className="w-4"
-                    checked={mode === "ecb"}
-                    onChange={(e) => setMode(e.target.value)}
-                  />
-                  <label htmlFor="list-ecb" className="w-full ms-2">
-                    ECB
-                  </label>
-                </div>
-              </li>
-              <li className="w-full border-b border-primary_3 rounded-t-md">
-                <div className="flex items-center px-3 h-9">
-                  <input
-                    id="list-cbc"
-                    type="radio"
-                    value="cbc"
-                    className="w-4"
-                    checked={mode === "cbc"}
-                    onChange={(e) => setMode(e.target.value)}
-                  />
-                  <label htmlFor="list-cbc" className="w-full ms-2">
-                    CBC
-                  </label>
-                </div>
-              </li>
-              <li className="w-full border-b border-primary_3 rounded-t-md">
-                <div className="flex items-center px-3 h-9">
-                  <input
-                    id="list-ofb"
-                    type="radio"
-                    value="ofb"
-                    className="w-4"
-                    checked={mode === "ofb"}
-                    onChange={(e) => setMode(e.target.value)}
-                  />
-                  <label htmlFor="list-ofb" className="w-full ms-2">
-                    OFB
-                  </label>
-                </div>
-              </li>
-              <li className="w-full border-b border-primary_3 rounded-t-md">
-                <div className="flex items-center px-3 h-9">
-                  <input
-                    id="list-cfb"
-                    type="radio"
-                    value="cfb"
-                    className="w-4"
-                    checked={mode === "cfb"}
-                    onChange={(e) => setMode(e.target.value)}
-                  />
-                  <label htmlFor="list-cfb" className="w-full ms-2">
-                    CFB
-                  </label>
-                </div>
-              </li>
-              <li className="w-full rounded-t-md">
-                <div className="flex items-center px-3 h-9">
-                  <input
-                    id="list-ctr"
-                    type="radio"
-                    value="counter"
-                    className="w-4"
-                    checked={mode === "counter"}
-                    onChange={(e) => setMode(e.target.value)}
-                  />
-                  <label htmlFor="list-ctr" className="w-full ms-2">
-                    Counter
-                  </label>
-                </div>
-              </li>
-            </ul>
+            {/* byte size picker */}
+            {(mode === "cfb" || mode === "ofb") && (
+              <div className="mx-1 mb-2">
+                <h3 className="h-full mb-1 items-center flex text-md text-white">
+                  OFB/CFB Byte Size
+                </h3>
+
+                <ul className="lg:flex text-white bg-primary_2 rounded-md border border-primary_3">
+                  <li className="w-full border-b lg:border-r border-primary_3">
+                    <div className="flex items-center px-3 h-8">
+                      <input
+                        id="size-2"
+                        type="radio"
+                        value={2}
+                        checked={size === 2}
+                        onChange={(e) => setSize(parseInt(e.target.value))}
+                      />
+                      <label htmlFor="size-2" className="w-full ms-2 text-sm">
+                        2B
+                      </label>
+                    </div>
+                  </li>
+                  <li className="w-full border-b lg:border-r border-primary_3">
+                    <div className="flex items-center px-3 h-8">
+                      <input
+                        id="size-4"
+                        type="radio"
+                        value={4}
+                        checked={size === 4}
+                        onChange={(e) => setSize(parseInt(e.target.value))}
+                      />
+                      <label htmlFor="size-4" className="w-full ms-2 text-sm">
+                        4B
+                      </label>
+                    </div>
+                  </li>
+                  <li className="w-full border-primary_3">
+                    <div className="flex items-center px-3 h-8">
+                      <input
+                        id="size-8"
+                        type="radio"
+                        value={8}
+                        checked={size === 8}
+                        onChange={(e) => setSize(parseInt(e.target.value))}
+                      />
+                      <label htmlFor="size-8" className="w-full ms-2 text-sm">
+                        8B
+                      </label>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            )}
 
             <div className="lg:flex">
               <button
