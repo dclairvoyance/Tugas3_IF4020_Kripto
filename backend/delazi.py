@@ -42,10 +42,10 @@ INVERSE_SBOX = [
 
 # key expander (64 bytes)
 KEY_EXPANDER_STRING = "gyattrizzlersigmaohiofanumtaxjdonmysoulshuwalahumbatugaskriptoduar"
-KEY_EXPANDER_HEX = KEY_EXPANDER_STRING.encode('latin-1').hex()
+KEY_EXPANDER_HEX = KEY_EXPANDER_STRING.encode('utf-8').hex()
 # init_vector (16 bytes)
 INIT_VECTOR_STRING = "adalahinitvector"
-INIT_VECTOR_HEX = INIT_VECTOR_STRING.encode('latin-1').hex()
+INIT_VECTOR_HEX = INIT_VECTOR_STRING.encode('utf-8').hex()
 
 # helpers
 # pad Z to string to make it 16 byte
@@ -58,23 +58,15 @@ def string_padding(input_string):
 
 # convert string to hex
 def string_to_hex(string):
-  hex = string.encode('latin-1').hex()
+  hex = string.encode('utf-8').hex()
   return hex
 
 # convert hex to string
 def hex_to_string(hex):
-  string = bytes.fromhex(hex).decode('latin-1')
+  string = hex.replace(" ", "").lower()
+  string = bytes.fromhex(hex).decode('utf-8')
 
   return string
-
-# get round from key length
-def get_round(length):
-  if (length == 16):
-    return 10
-  elif (length == 24):
-    return 12
-  elif (length == 32):
-    return 14
 
 # input: a-b-c-d (4 bytes)
 # output: d-c-b-a (4 bytes)
@@ -109,80 +101,92 @@ def key_expansion(external_key_hex, round):
     # xor 16 bytes of external key with first 16 bytes of key expander
     expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:32])
     external_key_chunk1 = bytes.fromhex(external_key_hex[0:32])
-    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1))
 
     # xor 16 bytes of external key with second 16 bytes of key expander
     expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[32:2*32])
-    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk1)).hex()
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk1))
 
     # xor first 8 bytes of external key with last 8 bytes of key expander
     expander_chunk3 = bytes.fromhex(KEY_EXPANDER_HEX[2*32:2*40])
     external_key_chunk2 = bytes.fromhex(external_key_hex[0:2*8])
-    result_chunk3 = bytes(x ^ y for x, y in zip(expander_chunk3, external_key_chunk2)).hex()
+    result_chunk3 = bytes(x ^ y for x, y in zip(expander_chunk3, external_key_chunk2))
 
     # combine results
-    result_key += result_chunk1 + result_chunk2 + result_chunk3
+    result_key = bytes.fromhex(result_key)
+    result_key += (result_chunk1 + result_chunk2 + result_chunk3)
+    result_key = result_key.decode('utf-8')
     # mix results
     result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
+    result_key_mix = result_key_mix.encode('utf-8').hex()
 
   # if external key is 24 byte (24 + 24 + 16)
   elif (len(external_key_hex) == 48):
     # xor 24 bytes of external key with first 24 bytes of key expander
     expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:48])
     external_key_chunk1 = bytes.fromhex(external_key_hex[0:48])
-    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1))
 
     # xor first 16 bytes of external key with last 16 bytes of key expander
     expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[48:80])
     external_key_chunk2 = bytes.fromhex(external_key_hex[0:32])
-    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2)).hex()
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2))
 
     # combine results
-    result_key += result_chunk1 + result_chunk2
+    result_key = bytes.fromhex(result_key)
+    result_key += (result_chunk1 + result_chunk2)
+    result_key = result_key.decode('utf-8')
     # mix results
     result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
+    result_key_mix = result_key_mix.encode('utf-8').hex()
 
   # if external key is 32 byte and round is 14 (32 + 32 + 8)
   elif (len(external_key_hex) == 64 and round == 14):
     # xor 32 bytes of external key with first 32 bytes of key expander
     expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:64])
     external_key_chunk1 = bytes.fromhex(external_key_hex[0:64])
-    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1))
 
     # xor first 8 bytes of external key with last 8 bytes of key expander
     expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[64:80])
     external_key_chunk2 = bytes.fromhex(external_key_hex[0:16])
-    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2)).hex()
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2))
 
     # combine results
-    result_key += result_chunk1 + result_chunk2
+    result_key = bytes.fromhex(result_key)
+    result_key += (result_chunk1 + result_chunk2)
+    result_key = result_key.decode('utf-8')
     # mix results
     result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
+    result_key_mix = result_key_mix.encode('utf-8').hex()
 
   # if external key is 32 byte and round is 16 (32 + 32 + 16)
   elif (len(external_key_hex) == 64 and round == 16):
     # xor 32 bytes of external key with first 32 bytes of key expander
     expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:64])
     external_key_chunk1 = bytes.fromhex(external_key_hex[0:64])
-    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1))
 
     # xor first 16 bytes of external key with last 16 bytes of key expander
     expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[64:96])
     external_key_chunk2 = bytes.fromhex(external_key_hex[0:32])
-    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2)).hex()
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2))
 
     # combine results
-    result_key += result_chunk1 + result_chunk2
+    result_key = bytes.fromhex(result_key)
+    result_key += (result_chunk1 + result_chunk2)
+    result_key = result_key.decode('utf-8')
     # mix results
     result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
+    result_key_mix = result_key_mix.encode('utf-8').hex()
   
   return result_key_mix
 
@@ -259,6 +263,7 @@ def increment_counter(input_hex):
   return output_hex
 
 # ecb mode: encrypt
+# input: string
 def ecb_encrypt(input, external_key, round):
   input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
 
@@ -284,8 +289,8 @@ def ecb_encrypt(input, external_key, round):
   return encrypted_hex
 
 # ecb mode: decrypt
-def ecb_decrypt(input, external_key, round):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def ecb_decrypt(input_hex, external_key, round):
+  external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -309,6 +314,7 @@ def ecb_decrypt(input, external_key, round):
   return decrypted_hex
 
 # cbc mode: encrypt
+# input: string
 def cbc_encrypt(input, external_key, round):
   input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
 
@@ -339,8 +345,8 @@ def cbc_encrypt(input, external_key, round):
   return encrypted_hex
 
 # cbc mode: decrypt
-def cbc_decrypt(input, external_key, round):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def cbc_decrypt(input_hex, external_key, round):
+  external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -368,6 +374,7 @@ def cbc_decrypt(input, external_key, round):
   return decrypted_hex
 
 # cfb mode: encrypt
+# input: string
 def cfb_encrypt(input, external_key, round, cfb_size):
   input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
 
@@ -396,8 +403,8 @@ def cfb_encrypt(input, external_key, round, cfb_size):
   return encrypted_hex
 
 # cfb mode: decrypt
-def cfb_decrypt(input, external_key, round, cfb_size):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def cfb_decrypt(input_hex, external_key, round, cfb_size):
+  external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -423,6 +430,7 @@ def cfb_decrypt(input, external_key, round, cfb_size):
   return decrypted_hex
 
 # ofb mode: encrypt
+# input: string
 def ofb_encrypt(input, external_key, round, ofb_size):
   input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
 
@@ -450,8 +458,8 @@ def ofb_encrypt(input, external_key, round, ofb_size):
   return encrypted_hex
 
 # ofb mode: decrypt
-def ofb_decrypt(input, external_key, round, ofb_size):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def ofb_decrypt(input_hex, external_key, round, ofb_size):
+  external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -477,6 +485,7 @@ def ofb_decrypt(input, external_key, round, ofb_size):
   return decrypted_hex
 
 # counter mode: encrypt
+# input: string
 def counter_encrypt(input, external_key, round):
   input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
 
@@ -502,8 +511,8 @@ def counter_encrypt(input, external_key, round):
   return encrypted_hex
 
 # counter mode: decrypt
-def counter_decrypt(input, external_key, round):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def counter_decrypt(input_hex, external_key, round):
+  external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -532,10 +541,10 @@ if __name__ == "__main__":
   input_hex = string_to_hex(string_padding(input_string))
 
   # 16 byte = 128 bit
-  # external_key_string = "eYsHnTjPfWqRdGmZ"
+  external_key_string = "jKPmNqXoRvSbTdUw"
 
   # 32 byte = 256 bit
-  external_key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
+  # external_key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
 
   external_key_hex = string_to_hex(external_key_string)
 
@@ -545,12 +554,8 @@ if __name__ == "__main__":
   print("Input          : " + input_string)
 
   # computation in hex
-  round = get_round(len(external_key_string)) # temporary (user input)
-  encrypt_result = ofb_encrypt(input_string, external_key_string, round, 2)
+  encrypt_result = ecb_encrypt(input_hex, external_key_string, 10)
   print("Encrypt result : " + encrypt_result)
 
-  decrypt_result = ofb_decrypt(encrypt_result, external_key_string, round, 2)
+  decrypt_result = ecb_decrypt(encrypt_result, external_key_string, 10)
   print("Decrypt result : " + hex_to_string(decrypt_result))
-
-  # if(decrypt_result == input_string):
-  #   print("Final check: complete")

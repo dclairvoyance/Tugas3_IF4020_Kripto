@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { MdLockOutline, MdLockOpen } from "react-icons/md";
+import { MdLockOutline, MdLockOpen, MdArrowCircleLeft } from "react-icons/md";
 import Subpage from "./Subpage";
 import TextInput from "./TextInput";
 import FileInput from "./FileInput";
@@ -18,13 +18,15 @@ const Delazi = () => {
 
   const [key, setKey] = useState("");
   const [mode, setMode] = useState("ecb");
-  const [round, setRound] = useState(16);
+  const [round, setRound] = useState(10);
   const [size, setSize] = useState(2);
 
+  const setInputAsOutput = () => {
+    setUserInput(userOutput);
+  };
   const handleFormat = (format) => {
     setFormat(format);
   };
-
   const handleUserInput = (textInput) => {
     setUserInput(textInput);
   };
@@ -126,7 +128,7 @@ const Delazi = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ciphertext: userInput,
+          ciphertext: stringToHex(userInput),
           key: key,
           round: round,
           mode: mode,
@@ -213,7 +215,10 @@ const Delazi = () => {
             </h2>
             {/* text input */}
             {format === "text" && (
-              <TextInput handleOnChangeParent={handleUserInput} />
+              <TextInput
+                text={userInput}
+                handleOnChangeParent={handleUserInput}
+              />
             )}
 
             {/* file input */}
@@ -382,7 +387,7 @@ const Delazi = () => {
               </div>
             )}
 
-            <div className="lg:flex">
+            <div className="lg:flex mb-3">
               <button
                 onClick={encryptAction}
                 className="bg-primary_2 hover:bg-primary_3 border-primary_3 text-secondary px-2 py-1.5 my-1 lg:mr-1 rounded flex items-center mx-auto"
@@ -398,6 +403,13 @@ const Delazi = () => {
                 <span className="text-sm">Decrypt</span>
               </button>
             </div>
+
+            <button
+              onClick={setInputAsOutput}
+              className="rounded-full flex items-center justify-center w-8 h-8 border border-primary_3 mx-auto"
+            >
+              <MdArrowCircleLeft size="24" />
+            </button>
           </div>
 
           {/* output */}
