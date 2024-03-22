@@ -259,8 +259,11 @@ def increment_counter(input_hex):
 def ecb_encrypt(input_hex, external_key_hex, round):
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
+  # process every 16 bytes
   for i in range(0, len(input_hex), 32):
     chunk_hex = input_hex[i:i+32]
+
+    # add round key
     result_hex = xor_hex(chunk_hex, expanded_key_hex[0:32])
 
     # round enciphering
@@ -269,7 +272,7 @@ def ecb_encrypt(input_hex, external_key_hex, round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
     encrypted_hex += result_hex
@@ -279,19 +282,22 @@ def ecb_encrypt(input_hex, external_key_hex, round):
 def ecb_decrypt(input_hex, external_key_hex, round):
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
+  # process every 16 bytes
   for i in range(0, len(input_hex), 32):
     result_hex = input_hex[i:i+32]
 
     # round deciphering
     j = round
     while (j > 0):
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       result_hex = lazi_decrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = sbox_decrypt(result_hex)
       j -= 1
 
+    # inverse add round key
     result_hex = xor_hex(result_hex, expanded_key_hex[0:32])
+
     decrypted_hex += result_hex
   return decrypted_hex
 
@@ -299,22 +305,27 @@ def ecb_decrypt(input_hex, external_key_hex, round):
 def cbc_encrypt(input_hex, external_key_hex, round):
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
-  init_vector_hex = INIT_VECTOR_HEX
+  # vector_hex = IV for first block
+  #            = result of previous E function for next blocks
+  vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
-    chunk = input_hex[i:i+32]
-    result_hex = xor_hex(chunk, init_vector_hex)
+    # xor vector hex with plaintext
+    chunk_hex = input_hex[i:i+32]
+    result_hex = xor_hex(chunk_hex, vector_hex)
+
+    # add round key
     result_hex = xor_hex(result_hex, expanded_key_hex[0:32])
 
     # round enciphering
     j = 1
-    while (j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
-    init_vector_hex = result_hex
+    vector_hex = result_hex
     encrypted_hex += result_hex
   return encrypted_hex
 
@@ -322,32 +333,38 @@ def cbc_encrypt(input_hex, external_key_hex, round):
 def cbc_decrypt(input_hex, external_key_hex, round):
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
-  init_vector_hex = INIT_VECTOR_HEX
+  vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
     result_hex = input_hex[i:i+32]
 
     # round deciphering
     j = round
     while (j > 0):
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       result_hex = lazi_decrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = sbox_decrypt(result_hex)
       j -= 1
 
+    # inverse add round key
     result_hex = xor_hex(result_hex, expanded_key_hex[0:32])
-    result_hex = xor_hex(result_hex, init_vector_hex)
-    init_vector_hex = input_hex[i:i+32]
+    
+    # inverse xor vector hex
+    result_hex = xor_hex(result_hex, vector_hex)
+
+    vector_hex = input_hex[i:i+32]
     decrypted_hex += result_hex
   return decrypted_hex
 
 # cfb mode: encrypt
-def cfb_encrypt(input_hex, external_key_hex, round):
+def cfb_encrypt(input_hex, external_key_hex, round, cfb_size):
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
-  init_vector_hex = INIT_VECTOR_HEX
-  for i in range(0, len(input_hex), 32):
-    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
+  vector_hex = INIT_VECTOR_HEX
+  # process every cfb_size (2, 4, 8) bytes
+  for i in range(0, len(input_hex), cfb_size*2):
+    # add round key
+    result_hex = xor_hex(vector_hex, expanded_key_hex[0:32])
 
     # round enciphering
     j = 1
@@ -355,22 +372,24 @@ def cfb_encrypt(input_hex, external_key_hex, round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
-    # xor plaintext with result of E function (cfb mode)
-    result_hex = xor_hex(input_hex[i:i+32], result_hex)
+    # xor cfb_size plaintext with first cfb_size of result of E function
+    result_hex = xor_hex(input_hex[i:i+cfb_size*2], result_hex[0:cfb_size*2])
+    vector_hex = vector_hex[cfb_size*2:32] + result_hex
+
     encrypted_hex += result_hex
-    init_vector_hex = result_hex
   return encrypted_hex
 
 # cfb mode: decrypt
-def cfb_decrypt(input_hex, external_key_hex, round):
+def cfb_decrypt(input_hex, external_key_hex, round, cfb_size):
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex ,round)
-  init_vector_hex = INIT_VECTOR_HEX
-  for i in range(0, len(input_hex), 32):
-    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
+  vector_hex = INIT_VECTOR_HEX
+  for i in range(0, len(input_hex), cfb_size*2):
+    # add round key
+    result_hex = xor_hex(vector_hex, expanded_key_hex[0:32])
 
     # round deciphering
     j = 1
@@ -378,22 +397,24 @@ def cfb_decrypt(input_hex, external_key_hex, round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
-    # xor plaintext with result of E function (cfb mode)
-    result_hex = xor_hex(input_hex[i:i+32], result_hex)
+    # xor cfb_size ciphertext with first cfb_size of result of E function
+    result_hex = xor_hex(input_hex[i:i+cfb_size*2], result_hex[0:cfb_size*2])
+    vector_hex = vector_hex[cfb_size*2:32] + input_hex[i:i+cfb_size*2]
+
     decrypted_hex += result_hex
-    init_vector_hex = input_hex[i:i+32]
   return decrypted_hex
 
 # ofb mode: encrypt
-def ofb_encrypt(input_hex, external_key_hex, round):
+def ofb_encrypt(input_hex, external_key_hex, round, ofb_size):
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
-  init_vector_hex = INIT_VECTOR_HEX
-  for i in range(0, len(input_hex), 32):
-    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
+  vector_hex = INIT_VECTOR_HEX
+  for i in range(0, len(input_hex), ofb_size*2):
+    # add round key
+    result_hex = xor_hex(vector_hex, expanded_key_hex[0:32])
 
     # round enciphering
     j = 1
@@ -401,22 +422,24 @@ def ofb_encrypt(input_hex, external_key_hex, round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
-    # xor plaintext with result of E function (ofb mode)
-    result_hex = xor_hex(input_hex[i:i+32], result_hex)
+    # xor ofb_size plaintext with first ofb_size of result of E function
+    vector_hex = vector_hex[ofb_size*2:32] + result_hex[0:ofb_size*2]
+    result_hex = xor_hex(input_hex[i:i+ofb_size*2], result_hex[0:ofb_size*2])
+
     encrypted_hex += result_hex
-    init_vector_hex = result_hex
   return encrypted_hex
 
 # ofb mode: decrypt
-def ofb_decrypt(input_hex, external_key_hex, round):
+def ofb_decrypt(input_hex, external_key_hex, round, ofb_size):
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex ,round)
-  init_vector_hex = INIT_VECTOR_HEX
-  for i in range(0, len(input_hex), 32):
-    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
+  vector_hex = INIT_VECTOR_HEX
+  for i in range(0, len(input_hex), ofb_size*2):
+    # add round key
+    result_hex = xor_hex(vector_hex, expanded_key_hex[0:32])
 
     # round deciphering
     j = 1
@@ -424,13 +447,14 @@ def ofb_decrypt(input_hex, external_key_hex, round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
-    # xor ciphertext with result of E function (ofb mode)
-    result_hex = xor_hex(input_hex[i:i+32], result_hex)
+    # xor ofb_size ciphertext with first ofb_size of result of E function
+    vector_hex = vector_hex[ofb_size*2:32] + result_hex[0:ofb_size*2]
+    result_hex = xor_hex(input_hex[i:i+ofb_size*2], result_hex[0:ofb_size*2])
+
     decrypted_hex += result_hex
-    init_vector_hex = result_hex
   return decrypted_hex
 
 # counter mode: encrypt
@@ -447,7 +471,7 @@ def counter_encrypt(input_hex, external_key_hex, round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
     # xor plaintext with result of E function (counter mode)
@@ -470,7 +494,7 @@ def counter_decrypt(input_hex, external_key_hex, round):
       result_hex = sbox_encrypt(result_hex)
       result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*8):(j*8)+32])
       j += 1
 
     # xor ciphertext with result of E function (counter mode)
@@ -498,10 +522,10 @@ if __name__ == "__main__":
 
   # computation in hex
   round = get_round(len(external_key_string)) # temporary (user input)
-  encrypt_result = counter_encrypt(input_hex, external_key_hex, round)
-  print("Encrypt result : " + hex_to_string(encrypt_result))
+  encrypt_result = ofb_encrypt(input_hex, external_key_hex, round, 2)
+  print("Encrypt result : " + encrypt_result)
 
-  decrypt_result = counter_decrypt(encrypt_result, external_key_hex, round)
+  decrypt_result = ofb_decrypt(encrypt_result, external_key_hex, round, 2)
   print("Decrypt result : " + hex_to_string(decrypt_result))
 
   # if(decrypt_result == input_string):
