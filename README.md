@@ -17,6 +17,7 @@ npm run dev
 ### Backend (Flask)
 
 ```
+cd backend
 python app.py
 ```
 

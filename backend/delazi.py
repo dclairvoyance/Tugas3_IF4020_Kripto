@@ -166,7 +166,7 @@ def key_expansion(external_key_hex, round):
       result_key_mix += mix_key(result_key[i:i+4])
 
   # if external key is 32 byte and round is 16 (32 + 32 + 16)
-  elif (len(external_key_string) == 64 and round == 16):
+  elif (len(external_key_hex) == 64 and round == 16):
     # xor 32 bytes of external key with first 32 bytes of key expander
     expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:64])
     external_key_chunk1 = bytes.fromhex(external_key_hex[0:64])
@@ -259,7 +259,9 @@ def increment_counter(input_hex):
   return output_hex
 
 # ecb mode: encrypt
-def ecb_encrypt(input_hex, external_key_hex, round):
+def ecb_encrypt(input, external_key, round):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   # process every 16 bytes
@@ -282,7 +284,9 @@ def ecb_encrypt(input_hex, external_key_hex, round):
   return encrypted_hex
 
 # ecb mode: decrypt
-def ecb_decrypt(input_hex, external_key_hex, round):
+def ecb_decrypt(input, external_key, round):
+  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+
   decrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
   # process every 16 bytes
@@ -388,7 +392,7 @@ def cfb_encrypt(input_hex, external_key_hex, round, cfb_size):
 # cfb mode: decrypt
 def cfb_decrypt(input_hex, external_key_hex, round, cfb_size):
   decrypted_hex = ""
-  expanded_key_hex = key_expansion(external_key_hex ,round)
+  expanded_key_hex = key_expansion(external_key_hex, round)
   vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), cfb_size*2):
     # add round key
@@ -438,7 +442,7 @@ def ofb_encrypt(input_hex, external_key_hex, round, ofb_size):
 # ofb mode: decrypt
 def ofb_decrypt(input_hex, external_key_hex, round, ofb_size):
   decrypted_hex = ""
-  expanded_key_hex = key_expansion(external_key_hex ,round)
+  expanded_key_hex = key_expansion(external_key_hex, round)
   vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), ofb_size*2):
     # add round key

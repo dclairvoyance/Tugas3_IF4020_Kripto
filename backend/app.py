@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from delazi import ecb_encrypt, ecb_decrypt, cbc_encrypt, cbc_decrypt, cfb_encrypt, cfb_decrypt, \
+                   ofb_encrypt, ofb_decrypt, counter_encrypt, counter_decrypt
 
 app = Flask(__name__)
 cors = CORS(app, origins="*")
 
-@app.route("/lazi", methods=['GET'])
+@app.route("/delazi", methods=['GET'])
 def authors():
     return jsonify(
         {
@@ -16,12 +18,55 @@ def authors():
         }
     )
 
-@app.route("/lazi_encrypt", methods=['POST'])
-def encrypt():
-    plaintext = request.json
+@app.route("/delazi_encrypt", methods=['POST'])
+def ecb_encrypt_api():
+    plaintext = request.json["plaintext"]
+    key = request.json["key"]
+    round = request.json["round"]
+    mode = request.json["mode"]
+    size = request.json["size"]
+    if (mode == "ecb"):
+        encrypted = ecb_encrypt(plaintext, key, round)
+    elif (mode == "cbc"):
+        encrypted = cbc_encrypt(plaintext, key, round)
+    elif (mode == "cfb"):
+        encrypted = cfb_encrypt(plaintext, key, round, size)
+    elif (mode == "ofb"):
+        encrypted = ofb_encrypt(plaintext, key, round, size)
+    else:
+        encrypted = counter_encrypt(plaintext, key, round)
     return jsonify(
         {
-            "encrypted": plaintext
+            "status": 200,
+            "message": {
+                "encrypted": encrypted
+            }
+        }
+    )
+
+@app.route("/delazi_decrypt", methods=['POST'])
+def ecb_decrypt_api():
+    ciphertext = request.json["ciphertext"]
+    key = request.json["key"]
+    round = request.json["round"]
+    mode = request.json["mode"]
+    size = request.json["size"]
+    if (mode == "ecb"):
+        decrypted = ecb_decrypt(ciphertext, key, round)
+    elif (mode == "cbc"):
+        decrypted = cbc_decrypt(ciphertext, key, round)
+    elif (mode == "cfb"):
+        decrypted = cfb_decrypt(ciphertext, key, round, size)
+    elif (mode == "ofb"):
+        decrypted = ofb_decrypt(ciphertext, key, round, size)
+    else:
+        decrypted = counter_decrypt(ciphertext, key, round)
+    return jsonify(
+        {
+            "status": 200,
+            "message": {
+                "decrypted": decrypted
+            }
         }
     )
 
