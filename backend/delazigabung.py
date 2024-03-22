@@ -1,6 +1,8 @@
+# Delazi Algorithm
 # Irreducible Polynomial x^8 + x^7 + x^5 + x^3 + 1
 
-sbox = [
+# constants
+SBOX = [
   0x63, 0x7c, 0xa6, 0xe5, 0x81, 0x6d, 0x20, 0x83, 0x12, 0xb0, 0x2e, 0xe6, 0xc2, 0x79, 0x13, 0x15,
   0x91, 0x3d, 0xc0, 0x6a, 0x8f, 0xa9, 0xa1, 0x19, 0xb3, 0xdf, 0x6e, 0x5e, 0x11, 0x6c, 0x58, 0x27,
   0x1a, 0xa0, 0x06, 0xd0, 0xb2, 0xa3, 0xe7, 0x66, 0x5f, 0xff, 0x4c, 0x7b, 0x48, 0xfb, 0x14, 0xd4,
@@ -19,7 +21,7 @@ sbox = [
   0x96, 0x0f, 0x08, 0x70, 0x94, 0x30, 0x59, 0x53, 0x5c, 0xcc, 0x67, 0x40, 0x9d, 0x35, 0x3e, 0x3f
 ]
 
-inverse_sbox = [
+INVERSE_SBOX = [
   0xef, 0x3d, 0x53, 0xdf, 0xc5, 0x68, 0x22, 0x57, 0xf2, 0xa5, 0x7e, 0x3e, 0xc3, 0xcc, 0xa4, 0xf1,
   0x38, 0x1c, 0x08, 0x0e, 0x2e, 0x0f, 0xeb, 0x7b, 0x7a, 0x17, 0x20, 0xd3, 0xe3, 0x7c, 0xe5, 0x6a,
   0x06, 0x4c, 0xcf, 0x64, 0x95, 0x3f, 0xa0, 0x1f, 0x61, 0x76, 0xb4, 0x5d, 0x6c, 0x52, 0x0a, 0xac,
@@ -38,414 +40,469 @@ inverse_sbox = [
   0x9f, 0x71, 0x5e, 0x9d, 0x54, 0xe4, 0xde, 0x3b, 0x62, 0xa2, 0xd5, 0x2d, 0x59, 0x36, 0x5b, 0x29
 ]
 
-key_expander = "gyattrizzlersigmaohiofanumtaxjdonmysoulshuwalahumbatugaskriptoduar"
+# key expander (64 bytes)
+KEY_EXPANDER_STRING = "gyattrizzlersigmaohiofanumtaxjdonmysoulshuwalahumbatugaskriptoduar"
+KEY_EXPANDER_HEX = KEY_EXPANDER_STRING.encode('latin-1').hex()
+# init_vector (16 bytes)
+INIT_VECTOR_STRING = "adalahinitvector"
+INIT_VECTOR_HEX = INIT_VECTOR_STRING.encode('latin-1').hex()
+
+# helpers
+# pad Z to string to make it 16 byte
+def string_padding(input_string):
+  padding = len(input_string) % 16
+  output_string = input_string
+  if padding != 0:
+    output_string += "Z" * (16-padding)
+  return output_string
+
+# convert string to hex
+def string_to_hex(string):
+  hex = string.encode('latin-1').hex()
+  return hex
+
+# convert hex to string
+def hex_to_string(hex):
+  string = bytes.fromhex(hex).decode('latin-1')
+
+  return string
+
+# get round from key length
+def get_round(length):
+  if (length == 16):
+    return 10
+  elif (length == 24):
+    return 12
+  elif (length == 32):
+    return 14
+
+# input: a-b-c-d (4 bytes)
+# output: d-c-b-a (4 bytes)
 def mix_key(input):
   output = ""
   for i in range(3,-1,-1):
     output += input[i]
   return output
 
-def key_expansion(key_string, round):
-  result_key = ""
-  result_key_mix = ""
-  result_key += key_string
-  if(len(key_string) == 16 and round == 10):
-    chunk1 = key_expander[0:16].encode()
-    result_bytes1 = bytes(x ^ y for x, y in zip(key_string[0:16].encode(), chunk1))
-    key_chunk1 =  result_bytes1.decode()
-    chunk2 = key_expander[16:32].encode()
-    result_bytes2 = bytes(x ^ y for x, y in zip(key_string[0:16].encode(), chunk2))
-    key_chunk2 =  result_bytes2.decode()
-    chunk3 = key_expander[32:40].encode()
-    result_bytes3 = bytes(x ^ y for x, y in zip(key_string[0:8].encode(), chunk3))
-    key_chunk3 =  result_bytes3.decode()
+# get value of sbox from row-col
+def get_sbox_value(row, col):
+  # compute in flat list
+  index = 16 * row + col
+  return SBOX[index]
 
-    result_key += key_chunk1 + key_chunk2 + key_chunk3
+# get value of inverse sbox from row-col
+def get_inverse_sbox_value(row, col):
+  # compute in flat list
+  index = 16 * row + col
+  return INVERSE_SBOX[index]
+
+# generate round key (round + 1 times):
+# key = 16 byte -> round = 10 -> expand key to 4*(10 + 1) + 12 = 56 byte
+# key = 24 byte -> round = 12 -> expand key to 4*(12 + 1) + 12 = 64 byte
+# key = 32 byte -> round = 14 -> expand key to 4*(14 + 1) + 12 = 72 byte
+# key = 32 byte -> round = 16 -> expand key to 4*(16 + 1) + 12 = 80 byte
+def key_expansion(external_key_hex, round):
+  result_key = external_key_hex
+  
+  # if external key is 16 byte (16 + 16 + 16 + 8)
+  if (len(external_key_hex) == 32):
+    # xor 16 bytes of external key with first 16 bytes of key expander
+    expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:32])
+    external_key_chunk1 = bytes.fromhex(external_key_hex[0:32])
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
+
+    # xor 16 bytes of external key with second 16 bytes of key expander
+    expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[32:2*32])
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk1)).hex()
+
+    # xor first 8 bytes of external key with last 8 bytes of key expander
+    expander_chunk3 = bytes.fromhex(KEY_EXPANDER_HEX[2*32:2*40])
+    external_key_chunk2 = bytes.fromhex(external_key_hex[0:2*8])
+    result_chunk3 = bytes(x ^ y for x, y in zip(expander_chunk3, external_key_chunk2)).hex()
+
+    # combine results
+    result_key += result_chunk1 + result_chunk2 + result_chunk3
+    # mix results
+    result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
 
-  elif(len(key_string) == 24 and round == 12):
-    chunk1 = key_expander[0:24].encode()
-    result_bytes1 = bytes(x ^ y for x, y in zip(key_string[0:24].encode(), chunk1))
-    key_chunk1 =  result_bytes1.decode()
-    chunk2 = key_expander[24:48].encode()
-    result_bytes2 = bytes(x ^ y for x, y in zip(key_string[0:24].encode(), chunk2))
-    key_chunk2 =  result_bytes2.decode()
-    # chunk3 = key_expander[48:64].encode()
-    # result_bytes3 = bytes(x ^ y for x, y in zip(key_string[0:16].encode(), chunk3))
-    # key_chunk3 =  result_bytes3.decode()
+  # if external key is 24 byte (24 + 24 + 16)
+  elif (len(external_key_hex) == 48):
+    # xor 24 bytes of external key with first 24 bytes of key expander
+    expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:48])
+    external_key_chunk1 = bytes.fromhex(external_key_hex[0:48])
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
 
-    result_key += key_chunk1 + key_chunk2
+    # xor first 16 bytes of external key with last 16 bytes of key expander
+    expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[48:80])
+    external_key_chunk2 = bytes.fromhex(external_key_hex[0:32])
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2)).hex()
+
+    # combine results
+    result_key += result_chunk1 + result_chunk2
+    # mix results
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
 
-  elif(len(key_string) == 32 and round == 14):
-    chunk1 = key_expander[0:32].encode()
-    result_bytes1 = bytes(x ^ y for x, y in zip(key_string[0:32].encode(), chunk1))
-    key_chunk1 =  result_bytes1.decode()
-    chunk2 = key_expander[32:56].encode()
-    result_bytes2 = bytes(x ^ y for x, y in zip(key_string[0:32].encode(), chunk2))
-    key_chunk2 =  result_bytes2.decode()
-    # chunk3 = key_expander[48:64].encode()
-    # result_bytes3 = bytes(x ^ y for x, y in zip(key_string[0:16].encode(), chunk3))
-    # key_chunk3 =  result_bytes3.decode()
+  # if external key is 32 byte and round is 14 (32 + 32 + 8)
+  elif (len(external_key_hex) == 32 and round == 14):
+    # xor 32 bytes of external key with first 32 bytes of key expander
+    expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:64])
+    external_key_chunk1 = bytes.fromhex(external_key_hex[0:64])
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
 
-    result_key += key_chunk1 + key_chunk2
+    # xor first 8 bytes of external key with last 8 bytes of key expander
+    expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[64:80])
+    external_key_chunk2 = bytes.fromhex(external_key_hex[0:16])
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2)).hex()
+
+    # combine results
+    result_key += result_chunk1 + result_chunk2
+    # mix results
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
 
-  elif(len(key_string) == 32 and round == 16):
-    chunk1 = key_expander[0:32].encode()
-    result_bytes1 = bytes(x ^ y for x, y in zip(key_string[0:32].encode(), chunk1))
-    key_chunk1 =  result_bytes1.decode()
-    chunk2 = key_expander[32:64].encode()
-    result_bytes2 = bytes(x ^ y for x, y in zip(key_string[0:32].encode(), chunk2))
-    key_chunk2 =  result_bytes2.decode()
-    # chunk3 = key_expander[48:64].encode()
-    # result_bytes3 = bytes(x ^ y for x, y in zip(key_string[0:16].encode(), chunk3))
-    # key_chunk3 =  result_bytes3.decode()
+  # if external key is 32 byte and round is 16 (32 + 32 + 16)
+  elif (len(external_key_string) == 32 and round == 16):
+    # xor 32 bytes of external key with first 32 bytes of key expander
+    expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:64])
+    external_key_chunk1 = bytes.fromhex(external_key_hex[0:64])
+    result_chunk1 = bytes(x ^ y for x, y in zip(expander_chunk1, external_key_chunk1)).hex()
 
-    result_key += key_chunk1 + key_chunk2
+    # xor first 16 bytes of external key with last 16 bytes of key expander
+    expander_chunk2 = bytes.fromhex(KEY_EXPANDER_HEX[64:96])
+    external_key_chunk2 = bytes.fromhex(external_key_hex[0:32])
+    result_chunk2 = bytes(x ^ y for x, y in zip(expander_chunk2, external_key_chunk2)).hex()
+
+    # combine results
+    result_key += result_chunk1 + result_chunk2
+    # mix results
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
   
   return result_key_mix
 
-def get_sbox_value(row, col):
-  # Compute the index in the flat list
-  index = 16 * row + col
-  return sbox[index]
-
-def get_inverse_sbox_value(row, col):
-  # Compute the index in the flat list
-  index = 16 * row + col
-  return inverse_sbox[index]
-
-def flip_row(input_string):
-  result_string = ""
-  for i in [5, 4, 7, 6, 1, 0, 3, 2, 13, 12, 15, 14, 9, 8, 11, 10]:
-      result_string += input_string[i*2:(i+1)*2]
-  return result_string
-
+# lazi process: encrypt
 def lazi_encrypt(input_hex):
-  result_hex = ""
-  for i in range (0,len(input_hex), 8):
-    result_hex += input_hex[i+6:i+8]
-    result_hex += format((int(input_hex[i+2:i+4],16) + int(input_hex[i+4:i+6],16) + int(input_hex[i+6:i+8],16)) % 256, '02x')
-    result_hex += format((int(input_hex[i+4:i+6],16) + int(input_hex[i+6:i+8],16)) % 256, '02x')
-    result_hex += format((int(input_hex[i:i+2],16) + int(input_hex[i+2:i+4],16) + int(input_hex[i+4:i+6],16) + int(input_hex[i+6:i+8],16)) % 256, '02x')
+  output_hex = ""
+  # process every 4 bytes
+  for i in range (0, len(input_hex), 8):
+    # input: (a, b, c, d)
+    # output: (d, b + c + d, c + d, a + b + c + d)
+    output_hex += input_hex[i+6:i+8]
+    output_hex += format((int(input_hex[i+2:i+4], 16) + int(input_hex[i+4:i+6], 16) + int(input_hex[i+6:i+8], 16)) % 256, '02x')
+    output_hex += format((int(input_hex[i+4:i+6], 16) + int(input_hex[i+6:i+8], 16)) % 256, '02x')
+    output_hex += format((int(input_hex[i:i+2], 16) + int(input_hex[i+2:i+4], 16) + int(input_hex[i+4:i+6], 16) + int(input_hex[i+6:i+8], 16)) % 256, '02x')
 
-  return result_hex
+  return output_hex
 
+# lazi process: decrypt
 def lazi_decrypt(input_hex):
-  result_hex = ""
-  for i in range (0,len(input_hex), 8):
-    a4 = input_hex[i:i+2]
-    a3 = format((int(input_hex[i+4:i+6],16) - int(a4,16)) % 256, '02x')
-    a2 = format((int(input_hex[i+2:i+4],16) - int(a3,16) - int(a4,16)) % 256, '02x')
-    a1 = format((int(input_hex[i+6:i+8],16) - int(a2,16) - int(a3,16) - int(a4,16)) % 256, '02x')
-    result_hex += (a1+a2+a3+a4)
+  output_hex = ""
+  # process every 4 bytes
+  for i in range (0, len(input_hex), 8):
+    # input: (d, b + c + d, c + d, a + b + c + d)
+    # output: (a, b, c, d)
+    d = input_hex[i:i+2]
+    c = format((int(input_hex[i+4:i+6], 16) - int(d, 16)) % 256, '02x')
+    b = format((int(input_hex[i+2:i+4], 16) - int(c, 16) - int(d, 16)) % 256, '02x')
+    a = format((int(input_hex[i+6:i+8], 16) - int(b, 16) - int(c, 16) - int(d, 16)) % 256, '02x')
+    output_hex += (a + b + c + d)
 
+  return output_hex
+
+# xor block with round key
+def xor_hex(input_hex, key_hex):
+  input_chunk = bytes.fromhex(input_hex[0:32])
+  key_chunk = bytes.fromhex(key_hex[0:32])
+  result_hex = bytes(x ^ y for x, y in zip(input_chunk, key_chunk)).hex()
   return result_hex
 
-def add_round_key(input_hex, key):
-  key_hex = key.encode().hex()
-
-  result_hex = bytearray(len(key_hex) // 2)
-  for i in range(0,len(key_hex), 2):
-    result_hex[i // 2] = int(input_hex[i:i+2], 16) ^ int(key_hex[i:i+2], 16)
-
-  result_hex = bytes(result_hex).hex()
-  return result_hex
-
-def xor_key(input_hex, key_hex):
-  result_hex = bytearray(len(key_hex) // 2)
-  for i in range(0,len(key_hex), 2):
-    result_hex[i // 2] = int(input_hex[i:i+2], 16) ^ int(key_hex[i:i+2], 16)
-
-  result_hex = bytes(result_hex).hex()
-  return result_hex
-
-def string_padding(input_string):
-  padding = len(input_string) % 16
-  if padding != 0:
-    input_string += "Z" * (16-padding)
-  return input_string
-
-def string_to_hex(input_string):
-  hex_result = input_string.encode('utf-8').hex()  # Convert the chunk to hexadecimal representation # Append the hexadecimal representation to the list
-  return hex_result
-
-def hex_to_string(hex_string):
-    # Remove any spaces and convert the string to lowercase
-    hex_string = hex_string.replace(" ", "").lower()
-
-    # Convert pairs of hexadecimal characters to bytes and then decode to a string
-    normal_string = bytearray.fromhex(hex_string).decode('utf-8')
-
-    return normal_string
-
+# encrypt with sbox (row-col -> value)
 def sbox_encrypt(input_hex):
   output_hex = ""
   for i in range(0, len(input_hex), 2):
-    row = int(input_hex[i],16)
-    col = int(input_hex[i+1],16)
-    result_hex = format(get_sbox_value(row,col), '02x')
+    row = int(input_hex[i], 16)
+    col = int(input_hex[i+1], 16)
+    result_hex = format(get_sbox_value(row, col), '02x')
     output_hex += result_hex
   return output_hex
 
+# decrypt with sbox (row-col -> value)
 def sbox_decrypt(input_hex):
   output_hex = ""
   for i in range(0, len(input_hex), 2):
-    row = int(input_hex[i],16)
-    col = int(input_hex[i+1],16)
-    result_hex = format(get_inverse_sbox_value(row,col), '02x')
+    row = int(input_hex[i], 16)
+    col = int(input_hex[i+1], 16)
+    result_hex = format(get_inverse_sbox_value(row, col), '02x')
     output_hex += result_hex
   return output_hex
 
-def add_count(input_hex):
-  result_hex = bytearray(len(input_hex) // 2)
-  for i in range(0,len(input_hex), 2):
-    result_hex[i // 2] = (int(input_hex[i:i+2], 16) + 1) % 16
+# flip row
+def flip_row_col(input_hex):
+  output_hex = ""
+  for i in [5, 4, 7, 6, 1, 0, 3, 2, 13, 12, 15, 14, 9, 8, 11, 10]:
+      output_hex += input_hex[i*2:(i+1)*2]
+  return output_hex
 
-  result_hex = bytes(result_hex).hex()
-  return result_hex
+# counter mode: increment each hex of input_hex by 1
+def increment_counter(input_hex):
+  output_hex = bytearray(len(input_hex) // 2)
+  for i in range(0, len(input_hex), 2):
+    output_hex[i // 2] = (int(input_hex[i:i+2], 16) + 1) % 256
+  output_hex = bytes(output_hex).hex()
 
+  return output_hex
 
-def ecb_encrypt(input_hex, key, round):
+# ecb mode: encrypt
+def ecb_encrypt(input_hex, external_key_hex, round):
   encrypted_hex = ""
-  expanded_key = key_expansion(key,round)
+  expanded_key_hex = key_expansion(external_key_hex, round)
   for i in range(0, len(input_hex), 32):
-    chunk = input_hex[i:i+32]
-    result_hex = add_round_key(chunk,expanded_key[0:16])
+    chunk_hex = input_hex[i:i+32]
+    result_hex = xor_hex(chunk_hex, expanded_key_hex[0:32])
 
+    # round enciphering
     j = 1
-    while(j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
     encrypted_hex += result_hex
   return encrypted_hex
 
-def ecb_decrypt(input_hex, key, round):
+# ecb mode: decrypt
+def ecb_decrypt(input_hex, external_key_hex, round):
   decrypted_hex = ""
-  expanded_key = key_expansion(key,round)
+  expanded_key_hex = key_expansion(external_key_hex, round)
   for i in range(0, len(input_hex), 32):
     result_hex = input_hex[i:i+32]
 
+    # round deciphering
     j = round
-    while(j>0):
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+    while (j > 0):
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
       result_hex = lazi_decrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = sbox_decrypt(result_hex)
-      j-=1
+      j -= 1
 
-    result_hex = add_round_key(result_hex,expanded_key[0:16])
+    result_hex = xor_hex(result_hex, expanded_key_hex[0:32])
     decrypted_hex += result_hex
   return decrypted_hex
 
-def cbc_encrypt(input_hex, key, round):
+# cbc mode: encrypt
+def cbc_encrypt(input_hex, external_key_hex, round):
   encrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex, round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
     chunk = input_hex[i:i+32]
-    result_hex = xor_key(chunk, init_vector)
-    result_hex = add_round_key(result_hex,expanded_key[0:16])
+    result_hex = xor_hex(chunk, init_vector_hex)
+    result_hex = xor_hex(result_hex, expanded_key_hex[0:32])
 
+    # round enciphering
     j = 1
-    while(j<=round):
+    while (j<=round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
-    init_vector = result_hex
+    init_vector_hex = result_hex
     encrypted_hex += result_hex
   return encrypted_hex
 
-def cbc_decrypt(input_hex, key, round):
+# cbc mode: decrypt
+def cbc_decrypt(input_hex, external_key_hex, round):
   decrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex, round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
     result_hex = input_hex[i:i+32]
 
+    # round deciphering
     j = round
-    while(j>0):
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
+    while (j > 0):
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
       result_hex = lazi_decrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = sbox_decrypt(result_hex)
-      j-=1
+      j -= 1
 
-    result_hex = add_round_key(result_hex,expanded_key[0:16])
-    result_hex = xor_key(result_hex, init_vector)
-    init_vector = input_hex[i:i+32]
+    result_hex = xor_hex(result_hex, expanded_key_hex[0:32])
+    result_hex = xor_hex(result_hex, init_vector_hex)
+    init_vector_hex = input_hex[i:i+32]
     decrypted_hex += result_hex
   return decrypted_hex
 
-def cfb_encrypt(input_hex, key, round):
+# cfb mode: encrypt
+def cfb_encrypt(input_hex, external_key_hex, round):
   encrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex, round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
-    chunk = init_vector
-    result_hex = add_round_key(chunk,expanded_key[0:16])
+    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
 
+    # round enciphering
     j = 1
-    while(j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
-    result_hex = xor_key(input_hex[i:i+32], result_hex)
-    init_vector = result_hex
+    # xor plaintext with result of E function (cfb mode)
+    result_hex = xor_hex(input_hex[i:i+32], result_hex)
     encrypted_hex += result_hex
+    init_vector_hex = result_hex
   return encrypted_hex
 
-def cfb_decrypt(input_hex, key, round):
+# cfb mode: decrypt
+def cfb_decrypt(input_hex, external_key_hex, round):
   decrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex ,round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
-    chunk = init_vector
-    result_hex = add_round_key(chunk,expanded_key[0:16])
+    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
 
+    # round deciphering
     j = 1
-    while(j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
-    result_hex = xor_key(input_hex[i:i+32], result_hex)
-    init_vector = input_hex[i:i+32]
+    # xor plaintext with result of E function (cfb mode)
+    result_hex = xor_hex(input_hex[i:i+32], result_hex)
     decrypted_hex += result_hex
+    init_vector_hex = input_hex[i:i+32]
   return decrypted_hex
 
-def ofb_encrypt(input_hex, key, round):
+# ofb mode: encrypt
+def ofb_encrypt(input_hex, external_key_hex, round):
   encrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex, round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
-    chunk = init_vector
-    result_hex = add_round_key(chunk,expanded_key[0:16])
+    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
 
+    # round enciphering
     j = 1
-    while(j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
-    init_vector = result_hex
-    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    # xor plaintext with result of E function (ofb mode)
+    result_hex = xor_hex(input_hex[i:i+32], result_hex)
     encrypted_hex += result_hex
+    init_vector_hex = result_hex
   return encrypted_hex
 
-def ofb_decrypt(input_hex, key, round):
+# ofb mode: decrypt
+def ofb_decrypt(input_hex, external_key_hex, round):
   decrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex ,round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
-    chunk = init_vector
-    result_hex = add_round_key(chunk,expanded_key[0:16])
+    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
 
+    # round deciphering
     j = 1
-    while(j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
-    init_vector = result_hex
-    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    # xor ciphertext with result of E function (ofb mode)
+    result_hex = xor_hex(input_hex[i:i+32], result_hex)
     decrypted_hex += result_hex
+    init_vector_hex = result_hex
   return decrypted_hex
 
-def counter_encrypt(input_hex, key, round):
+# counter mode: encrypt
+def counter_encrypt(input_hex, external_key_hex, round):
   encrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex, round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
-    chunk = init_vector
-    result_hex = add_round_key(chunk,expanded_key[0:16])
+    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
 
+    # round enciphering
     j = 1
-    while(j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
-    init_vector = add_count(init_vector)
-    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    # xor plaintext with result of E function (counter mode)
+    result_hex = xor_hex(input_hex[i:i+32], result_hex)
     encrypted_hex += result_hex
+    init_vector_hex = increment_counter(init_vector_hex)
   return encrypted_hex
 
-def counter_decrypt(input_hex, key, round):
+# counter mode: decrypt
+def counter_decrypt(input_hex, external_key_hex, round):
   decrypted_hex = ""
-  expanded_key = key_expansion(key,round)
-  init_vector = "1234567890ABCDEFABCDEF1234567890"
+  expanded_key_hex = key_expansion(external_key_hex, round)
+  init_vector_hex = INIT_VECTOR_HEX
   for i in range(0, len(input_hex), 32):
-    chunk = init_vector
-    result_hex = add_round_key(chunk,expanded_key[0:16])
+    result_hex = xor_hex(init_vector_hex, expanded_key_hex[0:32])
 
+    # round deciphering
     j = 1
-    while(j<=round):
+    while (j <= round):
       result_hex = sbox_encrypt(result_hex)
-      result_hex = flip_row(result_hex)
+      result_hex = flip_row_col(result_hex)
       result_hex = lazi_encrypt(result_hex)
-      result_hex = add_round_key(result_hex,expanded_key[(j*4):(j*4)+16])
-      j+=1
+      result_hex = xor_hex(result_hex, expanded_key_hex[(j*4):(j*4)+32])
+      j += 1
 
-    init_vector = add_count(init_vector)
-    result_hex = xor_key(input_hex[i:i+32], result_hex)
+    # xor ciphertext with result of E function (counter mode)
+    result_hex = xor_hex(input_hex[i:i+32], result_hex)
     decrypted_hex += result_hex
+    init_vector_hex = increment_counter(init_vector_hex)
   return decrypted_hex
 
-# key = 16, round = 10
-# key = 24, round = 12
-# key = 32, round = 14
-# key = 32, round = 16
+# main program
+if __name__ == "__main__":
+  input_string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum. Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of \"de Finibus Bonorum et Malorum\" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, \"Lorem ipsum dolor sit amet..\", comes from a line in section 1.10.32."
+  input_hex = string_to_hex(string_padding(input_string))
 
-# apa itu key expansion wkwk
+  # 16 byte = 128 bit
+  external_key_string = "eYsHnTjPfWqRdGmZ"
 
-input_string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum. Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of \"de Finibus Bonorum et Malorum\" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, \"Lorem ipsum dolor sit amet..\", comes from a line in section 1.10.32."
-# input_string = "abcde"
-key_string = "jKPmNqXoRvSbTdUw"
-# key_string = "ZxRyTbDmFpHqWsEuJiOkLxNa"
-# key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
-input_string = string_padding(input_string)
-input = string_to_hex(input_string)
-print("key length: " + str(len(key_string)))
+  # 32 byte = 256 bit
+  # external_key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
+  external_key_hex = string_to_hex(external_key_string)
 
-print("string length: " + str(len(input_string)))
-print("length: " + str(len(input)))
+  print("Key length     : " + str(len(external_key_string)))
+  print("Input length   : " + str(len(input_string)))
 
-print("input: " + input_string)
-print("hex input: " + input)
+  print("Input          : " + input_string)
 
-encrypt_result = counter_encrypt(input, key_string, 10)
-print("encrypt result: " + encrypt_result)
+  # computation in hex
+  round = get_round(len(external_key_string)) # temporary (user input)
+  encrypt_result = counter_encrypt(input_hex, external_key_hex, round)
+  print("Encrypt result : " + hex_to_string(encrypt_result))
 
-decrypt_result = counter_decrypt(encrypt_result, key_string, 10)
-print("decrypt result: " + decrypt_result)
+  decrypt_result = counter_decrypt(encrypt_result, external_key_hex, round)
+  print("Decrypt result : " + hex_to_string(decrypt_result))
 
-result = hex_to_string(decrypt_result)
-print("result: " + result)
-
-if(result == input_string):
-  print("final check: complete")
+  # if(decrypt_result == input_string):
+  #   print("Final check: complete")
