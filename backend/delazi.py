@@ -546,7 +546,7 @@ if __name__ == "__main__":
 
   # computation in hex
   round = get_round(len(external_key_string)) # temporary (user input)
-  encrypt_result = ofb_encrypt(input_hex, external_key_string, round, 2)
+  encrypt_result = ofb_encrypt(input_string, external_key_string, round, 2)
   print("Encrypt result : " + encrypt_result)
 
   decrypt_result = ofb_decrypt(encrypt_result, external_key_string, round, 2)
