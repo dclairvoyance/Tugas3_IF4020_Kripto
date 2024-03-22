@@ -103,7 +103,7 @@ def get_inverse_sbox_value(row, col):
 # key = 32 byte -> round = 16 -> expand key to 4*(16 + 1) + 12 = 80 byte
 def key_expansion(external_key_hex, round):
   result_key = external_key_hex
-  
+
   # if external key is 16 byte (16 + 16 + 16 + 8)
   if (len(external_key_hex) == 32):
     # xor 16 bytes of external key with first 16 bytes of key expander
@@ -142,11 +142,12 @@ def key_expansion(external_key_hex, round):
     # combine results
     result_key += result_chunk1 + result_chunk2
     # mix results
+    result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
 
   # if external key is 32 byte and round is 14 (32 + 32 + 8)
-  elif (len(external_key_hex) == 32 and round == 14):
+  elif (len(external_key_hex) == 64 and round == 14):
     # xor 32 bytes of external key with first 32 bytes of key expander
     expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:64])
     external_key_chunk1 = bytes.fromhex(external_key_hex[0:64])
@@ -160,11 +161,12 @@ def key_expansion(external_key_hex, round):
     # combine results
     result_key += result_chunk1 + result_chunk2
     # mix results
+    result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
 
   # if external key is 32 byte and round is 16 (32 + 32 + 16)
-  elif (len(external_key_string) == 32 and round == 16):
+  elif (len(external_key_string) == 64 and round == 16):
     # xor 32 bytes of external key with first 32 bytes of key expander
     expander_chunk1 = bytes.fromhex(KEY_EXPANDER_HEX[0:64])
     external_key_chunk1 = bytes.fromhex(external_key_hex[0:64])
@@ -178,6 +180,7 @@ def key_expansion(external_key_hex, round):
     # combine results
     result_key += result_chunk1 + result_chunk2
     # mix results
+    result_key_mix = ""
     for i in range (0, len(result_key), 4):
       result_key_mix += mix_key(result_key[i:i+4])
   
@@ -509,10 +512,11 @@ if __name__ == "__main__":
   input_hex = string_to_hex(string_padding(input_string))
 
   # 16 byte = 128 bit
-  external_key_string = "eYsHnTjPfWqRdGmZ"
+  # external_key_string = "eYsHnTjPfWqRdGmZ"
 
   # 32 byte = 256 bit
-  # external_key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
+  external_key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
+
   external_key_hex = string_to_hex(external_key_string)
 
   print("Key length     : " + str(len(external_key_string)))
