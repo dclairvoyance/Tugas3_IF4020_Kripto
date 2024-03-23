@@ -348,7 +348,7 @@ const Delazi = () => {
             </h2>
             
             {/* Select Key Length */}
-            <h3 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg text-white">
+            <h3 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg text-white" id="text-smaller">
               Key Size in Byte:
             </h3>
             <div className="flex items-center space-x-4 flex-col mx-1 mb-1">
