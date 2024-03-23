@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { MdLockOutline, MdLockOpen, MdArrowCircleLeft } from "react-icons/md";
+import { MdLockOutline, MdLockOpen } from "react-icons/md";
 import Subpage from "./Subpage";
 import TextInput from "./TextInput";
 import FileInput from "./FileInput";
@@ -17,18 +17,35 @@ const Delazi = () => {
   const outputTextArea = useRef(null);
 
   const [key, setKey] = useState("");
-
+  
   const [mode, setMode] = useState("ecb");
   const [keyLength, setKeyLength] = useState("128");
-  const [round, setRound] = useState(10);
+  const [rounds, setRounds] = useState("14");
+  const [round, setRound] = useState(16);
   const [size, setSize] = useState(2);
 
-  const setInputAsOutput = () => {
-    setUserInput(userOutput);
+  
+  const validateKey = () => {
+    let errorMessage = "";
+    if (keyLength === "128" && key.length !== 16) {
+      errorMessage = "Key length should be 16 characters for 128-bit key.";
+    } else if (keyLength === "192" && key.length !== 24) {
+      errorMessage = "Key length should be 24 characters for 192-bit key.";
+    } else if (keyLength === "256" && key.length !== 32) {
+      errorMessage = "Key length should be 32 characters for 256-bit key.";
+    }
+    return errorMessage;
   };
+  
+  const showAlert = (message) => {
+    alert(message);
+  };
+  
+
   const handleFormat = (format) => {
     setFormat(format);
   };
+
   const handleUserInput = (textInput) => {
     setUserInput(textInput);
   };
@@ -49,6 +66,12 @@ const Delazi = () => {
   };
 
   const encryptAction = async () => {
+    const errorMessage = validateKey();
+      if (errorMessage) {
+        showAlert(errorMessage);
+        return;
+      }
+    
     if (format === "text") {
       await delaziEncryptAction();
     } else {
@@ -64,7 +87,7 @@ const Delazi = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          plaintext: stringToHex(userInput),
+          plaintext: userInput,
           key: key,
           round: round,
           mode: mode,
@@ -89,11 +112,6 @@ const Delazi = () => {
       const formData = new FormData();
       formData.append("file", fileInput);
       formData.append("key", key);
-      formData.append("round", round);
-      formData.append("mode", mode);
-      if (mode === "cfb" || mode === "ofb") {
-        formData.append("size", size);
-      }
 
       const response = await fetch(
         "http://localhost:8080/delazi_file_encrypt",
@@ -120,6 +138,13 @@ const Delazi = () => {
   };
 
   const decryptAction = async () => {
+    
+    const errorMessage = validateKey();
+      if (errorMessage) {
+        showAlert(errorMessage);
+        return;
+      }
+    
     if (format === "text") {
       await delaziDecryptAction();
     } else {
@@ -135,7 +160,7 @@ const Delazi = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ciphertext: stringToHex(userInput),
+          ciphertext: userInput,
           key: key,
           round: round,
           mode: mode,
@@ -161,11 +186,6 @@ const Delazi = () => {
       const formData = new FormData();
       formData.append("file", fileInput);
       formData.append("key", key);
-      formData.append("round", round);
-      formData.append("mode", mode);
-      if (mode === "cfb" || mode === "ofb") {
-        formData.append("size", size);
-      }
 
       const response = await fetch(
         "http://localhost:8080/delazi_file_decrypt",
@@ -193,6 +213,9 @@ const Delazi = () => {
 
   const handleFileOutputSubmit = () => {
     const element = document.createElement("a");
+    const file = new Blob([outputTextArea.current.value], {
+      type: "text/plain",
+    });
 
     if (format === "file") {
       element.href = fileURL;
@@ -224,10 +247,7 @@ const Delazi = () => {
             </h2>
             {/* text input */}
             {format === "text" && (
-              <TextInput
-                text={userInput}
-                handleOnChangeParent={handleUserInput}
-              />
+              <TextInput handleOnChangeParent={handleUserInput} />
             )}
 
             {/* file input */}
@@ -322,16 +342,13 @@ const Delazi = () => {
           </div>
 
           {/* settings */}
-          <div className="basis-2/12 flex-col mx-1">
+          <div className="basis-2/12 flex-col mx-1">            
             <h2 className="h-8 items-center flex text-lg font-semibold text-white">
               Settings
             </h2>
-
-            {/* Karunia */}
+            
             {/* Select Key Length */}
-            <h2 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg font-semibold text-white">
-              Key Size in Byte:
-            </h2>
+            <h2 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg font-semibold text-white">Key Size in Byte:</h2>
             <div className="flex items-center space-x-4">
               <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">
                 <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
@@ -376,40 +393,36 @@ const Delazi = () => {
             {/* Select Rounds for 256-bit Key */}
             {keyLength === "256" && (
               <div className="mt-4">
-                <h3 className="h-8 items-center ml-1 flex text-lg font-semibold text-white">
-                  Rounds:
-                </h3>
-                <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">
+                <h3 className="h-8 items-center ml-1 flex text-lg font-semibold text-white">Rounds:</h3>
+                <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">                                      
                   <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        value={14}
-                        checked={round === 14}
-                        onChange={(e) => setRound(e.target.value)}
+                        value="14"
+                        checked={rounds === "14"}
+                        onChange={(e) => setRounds(e.target.value)}
                         className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
                       />
                       <span className="text-white ml-2">14</span>
-                    </label>
+                    </label>  
                   </li>
-
+                  
                   <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        value={16}
-                        checked={round === 16}
-                        onChange={(e) => setRound(e.target.value)}
+                        value="16"
+                        checked={rounds === "16"}
+                        onChange={(e) => setRounds(e.target.value)}
                         className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
                       />
                       <span className="text-white ml-2">16</span>
                     </label>
-                  </li>
-                </ul>
+                  </li>                                                                       
+                </ul>                
               </div>
-            )}
-
-            {/* Karunia */}
+            )}            
 
             {/* key */}
             <h3 className="h-8 items-center ml-1 flex text-md text-white">
@@ -424,7 +437,7 @@ const Delazi = () => {
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
               ></textarea>
-            </div>
+            </div>                        
 
             {/* byte size picker */}
             {(mode === "cfb" || mode === "ofb") && (
@@ -480,7 +493,7 @@ const Delazi = () => {
               </div>
             )}
 
-            <div className="lg:flex mb-3">
+            <div className="lg:flex">
               <button
                 onClick={encryptAction}
                 className="bg-primary_2 hover:bg-primary_3 border-primary_3 text-secondary px-2 py-1.5 my-1 lg:mr-1 rounded flex items-center mx-auto"
@@ -495,14 +508,7 @@ const Delazi = () => {
                 <MdLockOpen size="16" />
                 <span className="text-sm">Decrypt</span>
               </button>
-            </div>
-
-            <button
-              onClick={setInputAsOutput}
-              className="rounded-full flex items-center justify-center w-8 h-8 border border-primary_3 mx-auto"
-            >
-              <MdArrowCircleLeft size="24" />
-            </button>
+            </div>            
           </div>
 
           {/* output */}
