@@ -348,11 +348,13 @@ const Delazi = () => {
             </h2>
             
             {/* Select Key Length */}
-            <h2 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg font-semibold text-white">Key Size in Byte:</h2>
-            <div className="flex items-center space-x-4">
+            <h3 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg text-white">
+              Key Size in Byte:
+            </h3>
+            <div className="flex items-center space-x-4 flex-col mx-1 mb-1">
               <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">
-                <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
-                  <label className="flex items-center">
+                <li className="w-full lg:border-r border-b border-primary_3 ml-2 pr-8">
+                  <div className="flex items-center px-3 h-8">
                     <input
                       type="radio"
                       value="128"
@@ -360,11 +362,13 @@ const Delazi = () => {
                       onChange={(e) => setKeyLength(e.target.value)}
                       className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-white ml-2">128</span>
-                  </label>
+                    <label htmlFor="size-2" className="w-full ms-2 text-sm">
+                      128
+                    </label>
+                  </div>
                 </li>
-                <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
-                  <label className="flex items-center">
+                <li className="w-full lg:border-r border-b border-primary_3 ml-2 pr-8">
+                  <div className="flex items-center px-3 h-8">
                     <input
                       type="radio"
                       value="192"
@@ -372,11 +376,13 @@ const Delazi = () => {
                       onChange={(e) => setKeyLength(e.target.value)}
                       className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-white ml-2">192</span>
-                  </label>
+                    <label htmlFor="size-4" className="w-full ms-2 text-sm">
+                      192
+                    </label>
+                  </div>
                 </li>
-                <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-4">
-                  <label className="flex items-center">
+                <li className="w-full border-b lg:border-r border-primary_3 ml-2 pr-8">
+                  <div className="flex items-center px-3 h-8">
                     <input
                       type="radio"
                       value="256"
@@ -384,8 +390,10 @@ const Delazi = () => {
                       onChange={(e) => setKeyLength(e.target.value)}
                       className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-white ml-2">256</span>
-                  </label>
+                    <label htmlFor="size-8" className="w-full ms-2 text-sm">
+                      256
+                    </label>
+                  </div>
                 </li>
               </ul>
             </div>
