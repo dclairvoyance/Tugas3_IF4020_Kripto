@@ -64,7 +64,7 @@ const Delazi = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          plaintext: userInput,
+          plaintext: stringToHex(userInput),
           key: key,
           round: round,
           mode: mode,
@@ -89,6 +89,11 @@ const Delazi = () => {
       const formData = new FormData();
       formData.append("file", fileInput);
       formData.append("key", key);
+      formData.append("round", round);
+      formData.append("mode", mode);
+      if (mode === "cfb" || mode === "ofb") {
+        formData.append("size", size);
+      }
 
       const response = await fetch(
         "http://localhost:8080/delazi_file_encrypt",
@@ -156,6 +161,11 @@ const Delazi = () => {
       const formData = new FormData();
       formData.append("file", fileInput);
       formData.append("key", key);
+      formData.append("round", round);
+      formData.append("mode", mode);
+      if (mode === "cfb" || mode === "ofb") {
+        formData.append("size", size);
+      }
 
       const response = await fetch(
         "http://localhost:8080/delazi_file_decrypt",
@@ -183,9 +193,6 @@ const Delazi = () => {
 
   const handleFileOutputSubmit = () => {
     const element = document.createElement("a");
-    const file = new Blob([outputTextArea.current.value], {
-      type: "text/plain",
-    });
 
     if (format === "file") {
       element.href = fileURL;

@@ -56,6 +56,13 @@ def string_padding(input_string):
     output_string += "Z" * (16-padding)
   return output_string
 
+def hex_padding(input_hex):
+    padding = (len(input_hex) // 2) % 16
+    output_hex = input_hex
+    if (padding != 0):
+      output_hex += "5a" * (16-padding)
+    return output_hex
+
 # convert string to hex
 def string_to_hex(string):
   hex = string.encode('utf-8').hex()
@@ -263,9 +270,8 @@ def increment_counter(input_hex):
   return output_hex
 
 # ecb mode: encrypt
-# input: string
-def ecb_encrypt(input, external_key, round):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def ecb_encrypt(input_hex, external_key, round):
+  input_hex, external_key_hex = hex_padding(input_hex), string_to_hex(external_key)
 
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)

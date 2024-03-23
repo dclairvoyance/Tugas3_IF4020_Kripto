@@ -18,6 +18,8 @@ npm run dev
 
 ```
 cd backend
+mkdir encrypted
+mkdir decrypted
 python app.py
 ```
 
