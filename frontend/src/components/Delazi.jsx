@@ -20,7 +20,7 @@ const Delazi = () => {
 
   const [mode, setMode] = useState("ecb");
   const [keyLength, setKeyLength] = useState(128);
-  const [round, setRound] = useState(16);
+  const [round, setRound] = useState(10);
   const [size, setSize] = useState(2);
   const [time, setTime] = useState(0);
 
