@@ -17,34 +17,32 @@ const Delazi = () => {
   const outputTextArea = useRef(null);
 
   const [key, setKey] = useState("");
-  
+
   const [mode, setMode] = useState("ecb");
-  const [keyLength, setKeyLength] = useState("128");
-  const [rounds, setRounds] = useState("14");
+  const [keyLength, setKeyLength] = useState(128);
   const [round, setRound] = useState(16);
   const [size, setSize] = useState(2);
+  const [time, setTime] = useState(0);
 
   const setInputAsOutput = () => {
     setUserInput(userOutput);
-  }
+  };
 
-  
   const validateKey = () => {
     let errorMessage = "";
-    if (keyLength === "128" && key.length !== 16) {
+    if (keyLength === 128 && key.length !== 16) {
       errorMessage = "Key length should be 16 characters for 128-bit key.";
-    } else if (keyLength === "192" && key.length !== 24) {
+    } else if (keyLength === 192 && key.length !== 24) {
       errorMessage = "Key length should be 24 characters for 192-bit key.";
-    } else if (keyLength === "256" && key.length !== 32) {
+    } else if (keyLength === 256 && key.length !== 32) {
       errorMessage = "Key length should be 32 characters for 256-bit key.";
     }
     return errorMessage;
   };
-  
+
   const showAlert = (message) => {
     alert(message);
   };
-  
 
   const handleFormat = (format) => {
     setFormat(format);
@@ -71,11 +69,11 @@ const Delazi = () => {
 
   const encryptAction = async () => {
     const errorMessage = validateKey();
-      if (errorMessage) {
-        showAlert(errorMessage);
-        return;
-      }
-    
+    if (errorMessage) {
+      showAlert(errorMessage);
+      return;
+    }
+
     if (format === "text") {
       await delaziEncryptAction();
     } else {
@@ -91,13 +89,14 @@ const Delazi = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          plaintext: userInput,
+          plaintext: stringToHex(userInput),
           key: key,
           round: round,
           mode: mode,
           ...((mode === "cfb" || mode === "ofb") && { size: size }),
         }),
       });
+
       const data = await response.json();
       if (data.status != 200) {
         setUserOutput("Error encrypting message.");
@@ -105,6 +104,8 @@ const Delazi = () => {
       }
       const encrypted = hexToString(data.message.encrypted);
       setUserOutput(encrypted);
+      const time = parseFloat(data.message.time);
+      setTime(parseFloat(time.toFixed(3)));
     } catch (error) {
       console.error("Error: ", error);
       setUserOutput("Error encrypting message.");
@@ -129,6 +130,9 @@ const Delazi = () => {
       const url = window.URL.createObjectURL(blob);
       setFileURL(url);
 
+      const time = parseFloat(response.headers.get("time"));
+      setTime(parseFloat(time.toFixed(3)));
+
       const reader = new FileReader();
       reader.onload = function (event) {
         setUserOutput(event.target.result);
@@ -142,13 +146,12 @@ const Delazi = () => {
   };
 
   const decryptAction = async () => {
-    
     const errorMessage = validateKey();
-      if (errorMessage) {
-        showAlert(errorMessage);
-        return;
-      }
-    
+    if (errorMessage) {
+      showAlert(errorMessage);
+      return;
+    }
+
     if (format === "text") {
       await delaziDecryptAction();
     } else {
@@ -164,7 +167,7 @@ const Delazi = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ciphertext: userInput,
+          ciphertext: stringToHex(userInput),
           key: key,
           round: round,
           mode: mode,
@@ -179,6 +182,8 @@ const Delazi = () => {
       }
       const decrypted = hexToString(data.message.decrypted);
       setUserOutput(decrypted);
+      const time = parseFloat(data.message.time);
+      setTime(parseFloat(time.toFixed(3)));
     } catch (error) {
       console.error("Error: ", error);
       setUserOutput("Error encrypting message.");
@@ -208,6 +213,9 @@ const Delazi = () => {
       const url = window.URL.createObjectURL(blob);
       setFileURL(url);
 
+      const time = parseFloat(response.headers.get("time"));
+      setTime(parseFloat(time.toFixed(3)));
+
       const reader = new FileReader();
       reader.onload = function (event) {
         setUserOutput(event.target.result);
@@ -222,9 +230,6 @@ const Delazi = () => {
 
   const handleFileOutputSubmit = () => {
     const element = document.createElement("a");
-    const file = new Blob([outputTextArea.current.value], {
-      type: "text/plain",
-    });
 
     if (format === "file") {
       element.href = fileURL;
@@ -251,12 +256,15 @@ const Delazi = () => {
         <div className="flex">
           {/* input */}
           <div className="basis-5/12 flex-col mx-1">
-            <h2 className="h-8 items-center ml-1 mb-2 flex text-lg font-semibold text-white">
+            <h2 className="h-8 items-center mx-1 mb-2 flex text-lg font-semibold text-white">
               Input
             </h2>
             {/* text input */}
             {format === "text" && (
-              <TextInput handleOnChangeParent={handleUserInput} />
+              <TextInput
+                text={userInput}
+                handleOnChangeParent={handleUserInput}
+              />
             )}
 
             {/* file input */}
@@ -267,11 +275,11 @@ const Delazi = () => {
               />
             )}
 
-            <h2 className="h-8 items-center ml-1 mb-1 flex text-lg font-semibold text-white">
+            <h2 className="h-8 items-center mx-1 mb-1 flex text-lg font-semibold text-white">
               Mode
             </h2>
             {/* mode picker */}
-            <ul className="mb-1 lg:flex items-center text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50">
+            <ul className="lg:flex items-center text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50">
               <li className="w-full lg:border-r border-b border-primary_3">
                 <div className="flex items-center px-3 h-8">
                   <input
@@ -351,119 +359,121 @@ const Delazi = () => {
           </div>
 
           {/* settings */}
-          <div className="basis-2/12 flex-col mx-1">            
+          <div className="basis-2/12 flex-col mx-1">
             <h2 className="h-8 items-center flex text-lg font-semibold text-white">
               Settings
             </h2>
-            
+
             {/* Select Key Length */}
-            <h3 className="h-8 items-center mt-3 ml-1 mb-4 flex text-lg text-white" id="text-smaller">
-              Key Size in Byte:
+            <h3 className="h-14 lg:h-8 items-center mx-1 flex text-md text-white">
+              Key Bit Size
             </h3>
-            <div className="flex items-center space-x-4 flex-col mx-1 mb-1">
-              <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">
-                <li className="w-full lg:border-r border-b border-primary_3 pr-8">
-                  <div className="flex items-center px-3 h-8">
-                    <input
-                      type="radio"
-                      value="128"
-                      checked={keyLength === "128"}
-                      onChange={(e) => setKeyLength(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <label htmlFor="size-2" className="w-full ms-2 text-sm">
-                      128
-                    </label>
-                  </div>
-                </li>
-                <li className="w-full lg:border-r border-b border-primary_3 pr-8">
-                  <div className="flex items-center px-3 h-8">
-                    <input
-                      type="radio"
-                      value="192"
-                      checked={keyLength === "192"}
-                      onChange={(e) => setKeyLength(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <label htmlFor="size-2" className="w-full ms-2 text-sm">
-                      192
-                    </label>
-                  </div>
-                </li>
-                <li className="w-full border-b lg:border-r border-primary_3 pr-8">
-                  <div className="flex items-center px-3 h-8">
-                    <input
-                      type="radio"
-                      value="256"
-                      checked={keyLength === "256"}
-                      onChange={(e) => setKeyLength(e.target.value)}
-                      className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <label htmlFor="size-8" className="w-full ms-2 text-sm">
-                      256
-                    </label>
-                  </div>
-                </li>
-              </ul>
-            </div>
+
+            <ul className="lg:flex text-white bg-primary_2 mb-2 rounded-md border border-primary_3">
+              <li className="w-full lg:border-r border-b border-primary_3">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="key-128"
+                    type="radio"
+                    value={128}
+                    checked={keyLength === 128}
+                    onChange={(e) => setKeyLength(parseInt(e.target.value))}
+                  />
+                  <label htmlFor="key-128" className="w-full ms-2 text-sm">
+                    128
+                  </label>
+                </div>
+              </li>
+              <li className="w-full lg:border-r border-b border-primary_3">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="key-192"
+                    type="radio"
+                    value={192}
+                    checked={keyLength === 192}
+                    onChange={(e) => setKeyLength(parseInt(e.target.value))}
+                  />
+                  <label htmlFor="key-192" className="w-full ms-2 text-sm">
+                    192
+                  </label>
+                </div>
+              </li>
+              <li className="w-full border-primary_3">
+                <div className="flex items-center px-3 h-8">
+                  <input
+                    id="key-256"
+                    type="radio"
+                    value={256}
+                    checked={keyLength === 256}
+                    onChange={(e) => setKeyLength(parseInt(e.target.value))}
+                  />
+                  <label htmlFor="key-256" className="w-full ms-2 text-sm">
+                    256
+                  </label>
+                </div>
+              </li>
+            </ul>
 
             {/* Select Rounds for 256-bit Key */}
-            {keyLength === "256" && (
-              <div className="mt-4">
-                <h3 className="h-8 items-center ml-1 flex text-lg font-semibold text-white">Rounds:</h3>
-                <ul className="lg:flex text-white bg-primary_2 mb-3 rounded-md border border-primary_3">                                      
-                  <li className="w-full border-b lg:border-r border-primary_3 pr-4">
-                    <label className="flex items-center">
+            {keyLength === 256 && (
+              <>
+                <h3 className="h-8 items-center mx-1 flex text-md text-white">
+                  Round
+                </h3>
+                <ul className="lg:flex text-white bg-primary_2 mb-2 rounded-md border border-primary_3">
+                  <li className="w-full border-b lg:border-r border-primary_3">
+                    <div className="flex items-center px-3 h-8">
                       <input
+                        id="round-14"
                         type="radio"
-                        value="14"
-                        checked={rounds === "14"}
-                        onChange={(e) => setRounds(e.target.value)}
-                        className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500 ml-2"
+                        value={14}
+                        checked={round === 14}
+                        onChange={(e) => setRound(parseInt(e.target.value))}
                       />
-                      <span className="text-white ml-2">14</span>
-                    </label>  
+                      <label htmlFor="round-14" className="w-full ms-2 text-sm">
+                        14
+                      </label>
+                    </div>
                   </li>
-                  
-                  <li className="w-full border-b lg:border-r border-primary_3 pr-4">
-                    <label className="flex items-center">
+                  <li className="w-full border-b lg:border-r border-primary_3">
+                    <div className="flex items-center px-3 h-8">
                       <input
+                        id="round-16"
                         type="radio"
-                        value="16"
-                        checked={rounds === "16"}
-                        onChange={(e) => setRounds(e.target.value)}
-                        className="form-radio text-primary_2 focus:ring-2 focus:ring-blue-500  ml-2"
+                        value={16}
+                        checked={round === 16}
+                        onChange={(e) => setRound(parseInt(e.target.value))}
                       />
-                      <span className="text-white ml-2">16</span>
-                    </label>
-                  </li>                                                                       
-                </ul>                
-              </div>
-            )}            
+                      <label htmlFor="round-16" className="w-full ms-2 text-sm">
+                        16
+                      </label>
+                    </div>
+                  </li>
+                </ul>
+              </>
+            )}
 
             {/* key */}
-            <h3 className="h-8 items-center ml-1 flex text-md text-white">
+            <h3 className="h-8 items-center mx-1 flex text-md text-white">
               Key
             </h3>
-            <div className="flex-col mx-1 mb-1">
-              <textarea
-                id="key"
-                rows="2"
-                className="w-full p-1.5 text-lg text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50"
-                placeholder="Write key here..."
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-              ></textarea>
-            </div>                        
+            <textarea
+              id="key"
+              rows="2"
+              className="w-full p-1.5 text-lg text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50"
+              placeholder="Write key here..."
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+            ></textarea>
 
             {/* byte size picker */}
             {(mode === "cfb" || mode === "ofb") && (
-              <div className="mx-1 mb-3">
-                <h3 className="h-full mb-1 items-center flex text-md text-white">
+              <>
+                <h3 className="h-14 lg:h-8 items-center mx-1 flex text-md text-white">
                   OFB/CFB Byte Size
                 </h3>
 
-                <ul className="lg:flex text-white bg-primary_2 rounded-md border border-primary_3">
+                <ul className="lg:flex text-white bg-primary_2 mb-2 rounded-md border border-primary_3">
                   <li className="w-full border-b lg:border-r border-primary_3">
                     <div className="flex items-center px-3 h-8">
                       <input
@@ -507,10 +517,10 @@ const Delazi = () => {
                     </div>
                   </li>
                 </ul>
-              </div>
+              </>
             )}
 
-            <div className="lg:flex">
+            <div className="lg:flex mb-3">
               <button
                 onClick={encryptAction}
                 className="bg-primary_2 hover:bg-primary_3 border-primary_3 text-secondary px-2 py-1.5 my-1 lg:mr-1 rounded flex items-center mx-auto"
@@ -525,18 +535,18 @@ const Delazi = () => {
                 <MdLockOpen size="16" />
                 <span className="text-sm">Decrypt</span>
               </button>
-            </div>   
+            </div>
             <button
               onClick={setInputAsOutput}
               className="rounded-full flex items-center justify-center w-8 h-8 border border-primary_3 mx-auto mt-3"
             >
               <MdArrowCircleLeft size="24" />
-            </button>         
+            </button>
           </div>
 
           {/* output */}
           <div className="basis-5/12 flex-col mx-1">
-            <h2 className="h-8 items-center ml-1 mb-2 flex text-lg font-semibold text-white">
+            <h2 className="h-8 items-center mx-1 mb-2 flex text-lg font-semibold text-white">
               Output
             </h2>
             <textarea
@@ -544,10 +554,18 @@ const Delazi = () => {
               id="output"
               ref={outputTextArea}
               rows="8"
-              className="w-full p-2 text-lg text-white bg-primary_2 rounded-md border border-primary_3"
+              className="mb-2 w-full p-2 text-lg text-white bg-primary_2 rounded-md border border-primary_3"
               value={userOutput}
             ></textarea>
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <div className="lg:flex h-12 mr-6">
+                <h2 className="items-center ml-1 flex text-lg font-semibold text-white">
+                  Time:
+                </h2>
+                <p className="flex text-white items-center text-lg ml-1 -mt-1.5 lg:mt-0">
+                  {time} ms
+                </p>
+              </div>
               {/* download as txt file */}
               <FileOutput
                 handleOnChangeParent={handleFileOutputChange}

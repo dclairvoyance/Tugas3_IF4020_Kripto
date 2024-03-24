@@ -28,20 +28,21 @@ def delazi_encrypt_api():
     if (mode == "ofb" or mode == "cfb"):
         size = request.json["size"]
     if (mode == "ecb"):
-        encrypted = ecb_encrypt(plaintext, key, round)
+        encrypted, time = ecb_encrypt(plaintext, key, round)
     elif (mode == "cbc"):
-        encrypted = cbc_encrypt(plaintext, key, round)
+        encrypted, time = cbc_encrypt(plaintext, key, round)
     elif (mode == "cfb"):
-        encrypted = cfb_encrypt(plaintext, key, round, size)
+        encrypted, time = cfb_encrypt(plaintext, key, round, size)
     elif (mode == "ofb"):
-        encrypted = ofb_encrypt(plaintext, key, round, size)
+        encrypted, time = ofb_encrypt(plaintext, key, round, size)
     else:
-        encrypted = counter_encrypt(plaintext, key, round)
+        encrypted, time = counter_encrypt(plaintext, key, round)
     return jsonify(
         {
             "status": 200,
             "message": {
-                "encrypted": encrypted
+                "encrypted": encrypted,
+                "time": time
             }
         }
     )
@@ -55,127 +56,100 @@ def delazi_decrypt_api():
     if (mode == "ofb" or mode == "cfb"):
         size = request.json["size"]
     if (mode == "ecb"):
-        decrypted = ecb_decrypt(ciphertext, key, round)
+        decrypted, time = ecb_decrypt(ciphertext, key, round)
     elif (mode == "cbc"):
-        decrypted = cbc_decrypt(ciphertext, key, round)
+        decrypted, time = cbc_decrypt(ciphertext, key, round)
     elif (mode == "cfb"):
-        decrypted = cfb_decrypt(ciphertext, key, round, size)
+        decrypted, time = cfb_decrypt(ciphertext, key, round, size)
     elif (mode == "ofb"):
-        decrypted = ofb_decrypt(ciphertext, key, round, size)
+        decrypted, time = ofb_decrypt(ciphertext, key, round, size)
     else:
-        decrypted = counter_decrypt(ciphertext, key, round)
+        decrypted, time = counter_decrypt(ciphertext, key, round)
     return jsonify(
         {
             "status": 200,
             "message": {
-                "decrypted": decrypted
+                "decrypted": decrypted,
+                "time": time
             }
         }
     )
 
 @app.route("/delazi_file_encrypt", methods=['POST'])
 def delazi_file_encrypt_api():
+    # if file not found
     if 'file' not in request.files:
-        return "No file part", 400
-        # return jsonify(
-        #     {
-        #         "status": 400,
-        #         "message": "No file part"
-        #     }
-        # )
+        return "No file part"
     file = request.files['file']
     key = request.form["key"]
     round = int(request.form["round"])
     mode = request.form["mode"]
     if (mode == "ofb" or mode == "cfb"):
         size = int(request.form["size"])
+    # if file not selected
     if file.filename == '':
-        return "No selected file", 400
-        # return jsonify(
-        #     {
-        #         "status": 400,
-        #         "message": "No selected file"
-        #     }
-        # )
+        return "No selected file"
     if file:
         file_hex = ''.join(format(x, '02x') for x in file.read())
         if (mode == "ecb"):
-            encrypted = bytes.fromhex(ecb_encrypt(file_hex, key, round))
+            encrypted_hex, time = ecb_encrypt(file_hex, key, round)
+            encrypted = bytes.fromhex(encrypted_hex)
         elif (mode == "cbc"):
-            encrypted = bytes.fromhex(cbc_encrypt(file_hex, key, round))
+            encrypted_hex, time = cbc_encrypt(file_hex, key, round)
+            encrypted = bytes.fromhex(encrypted_hex)
         elif (mode == "cfb"):
-            encrypted = bytes.fromhex(cfb_encrypt(file_hex, key, round, size))
+            encrypted_hex, time = cfb_encrypt(file_hex, key, round, size)
+            encrypted = bytes.fromhex(encrypted_hex)
         elif (mode == "ofb"):
-            encrypted = bytes.fromhex(ofb_encrypt(file_hex, key, round, size))
+            encrypted_hex, time = ofb_encrypt(file_hex, key, round, size)
+            encrypted = bytes.fromhex(encrypted_hex)
         else:
-            encrypted = bytes.fromhex(counter_encrypt(file_hex, key, round))
+            encrypted_hex, time = counter_encrypt(file_hex, key, round)
+            encrypted = bytes.fromhex(encrypted_hex)
 
         file_path = os.path.join('encrypted', 'encrypted.txt')
         with open(file_path, 'wb') as f:
             f.write(encrypted)
 
-        return send_file(file_path, as_attachment=True), 200
-
-        # return jsonify(
-        #     {
-        #         "status": 200,
-        #         "message": {
-        #             "encrypted": encrypted
-        #         }
-        #     }
-        # )
+        return send_file(file_path, as_attachment=True), {"time": time}
 
 @app.route("/delazi_file_decrypt", methods=['POST'])
 def delazi_file_decrypt_api():
+    # if file not found
     if 'file' not in request.files:
-        return "No file part", 400
-        # return jsonify(
-        #     {
-        #         "status": 400,
-        #         "message": "No file part"
-        #     }
-        # )
+        return "No file part"
     file = request.files['file']
     key = request.form["key"]
     round = int(request.form["round"])
     mode = request.form["mode"]
     if (mode == "ofb" or mode == "cfb"):
         size = int(request.form["size"])
+    # if file not selected
     if file.filename == '':
-        return "No selected file", 400
-        # return jsonify(
-        #     {
-        #         "status": 400,
-        #         "message": "No selected file"
-        #     }
-        # )
+        return "No selected file"
     if file:
         file_hex = ''.join(format(x, '02x') for x in file.read())
         if (mode == "ecb"):
-            encrypted = bytes.fromhex(ecb_decrypt(file_hex, key, round))
+            decrypted_hex, time = ecb_decrypt(file_hex, key, round)
+            decrypted = bytes.fromhex(decrypted_hex)
         elif (mode == "cbc"):
-            encrypted = bytes.fromhex(cbc_decrypt(file_hex, key, round))
+            decrypted_hex, time = cbc_decrypt(file_hex, key, round)
+            decrypted = bytes.fromhex(decrypted_hex)
         elif (mode == "cfb"):
-            encrypted = bytes.fromhex(cfb_decrypt(file_hex, key, round, size))
+            decrypted_hex, time = cfb_decrypt(file_hex, key, round, size)
+            decrypted = bytes.fromhex(decrypted_hex)
         elif (mode == "ofb"):
-            encrypted = bytes.fromhex(ofb_decrypt(file_hex, key, round, size))
+            decrypted_hex, time = ofb_decrypt(file_hex, key, round, size)
+            decrypted = bytes.fromhex(decrypted_hex)
         else:
-            encrypted = bytes.fromhex(counter_decrypt(file_hex, key, round))
+            decrypted_hex, time = counter_decrypt(file_hex, key, round)
+            decrypted = bytes.fromhex(decrypted_hex)
 
         file_path = os.path.join('decrypted', 'decrypted.txt')
         with open(file_path, 'wb') as f:
-            f.write(encrypted)
+            f.write(decrypted)
 
-        return send_file(file_path, as_attachment=True), 200
-
-        # return jsonify(
-        #     {
-        #         "status": 200,
-        #         "message": {
-        #             "encrypted": encrypted
-        #         }
-        #     }
-        # )
+        return send_file(file_path, as_attachment=True), {"time": time}
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)

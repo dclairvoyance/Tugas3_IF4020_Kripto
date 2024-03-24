@@ -8,7 +8,7 @@ const TextInput = ({ handleOnChangeParent, text }) => {
   return (
     <textarea
       id="input"
-      rows="10"
+      rows="8"
       className="w-full p-2 text-lg text-white bg-primary_2 rounded-md border border-primary_3 focus:ring-blue-50"
       placeholder="Write plaintext here..."
       value={text}

@@ -1,6 +1,8 @@
 # Delazi Algorithm
 # Irreducible Polynomial x^8 + x^7 + x^5 + x^3 + 1
 
+import time
+
 # constants
 SBOX = [
   0x63, 0x7c, 0xa6, 0xe5, 0x81, 0x6d, 0x20, 0x83, 0x12, 0xb0, 0x2e, 0xe6, 0xc2, 0x79, 0x13, 0x15,
@@ -271,6 +273,7 @@ def increment_counter(input_hex):
 
 # ecb mode: encrypt
 def ecb_encrypt(input_hex, external_key, round):
+  time_start = time.time()
   input_hex, external_key_hex = hex_padding(input_hex), string_to_hex(external_key)
 
   encrypted_hex = ""
@@ -292,10 +295,13 @@ def ecb_encrypt(input_hex, external_key, round):
       j += 1
 
     encrypted_hex += result_hex
-  return encrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return encrypted_hex, process_time
 
 # ecb mode: decrypt
 def ecb_decrypt(input_hex, external_key, round):
+  time_start = time.time()
   external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
@@ -317,12 +323,14 @@ def ecb_decrypt(input_hex, external_key, round):
     result_hex = xor_hex(result_hex, expanded_key_hex[0:32])
 
     decrypted_hex += result_hex
-  return decrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return decrypted_hex, process_time
 
 # cbc mode: encrypt
-# input: string
-def cbc_encrypt(input, external_key, round):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def cbc_encrypt(input_hex, external_key, round):
+  time_start = time.time()
+  input_hex, external_key_hex = hex_padding(input_hex), string_to_hex(external_key)
 
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -348,10 +356,13 @@ def cbc_encrypt(input, external_key, round):
 
     vector_hex = result_hex
     encrypted_hex += result_hex
-  return encrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return encrypted_hex, process_time
 
 # cbc mode: decrypt
 def cbc_decrypt(input_hex, external_key, round):
+  time_start = time.time()
   external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
@@ -377,12 +388,14 @@ def cbc_decrypt(input_hex, external_key, round):
 
     vector_hex = input_hex[i:i+32]
     decrypted_hex += result_hex
-  return decrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return decrypted_hex, process_time
 
 # cfb mode: encrypt
-# input: string
-def cfb_encrypt(input, external_key, round, cfb_size):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def cfb_encrypt(input_hex, external_key, round, cfb_size):
+  time_start = time.time()
+  input_hex, external_key_hex = hex_padding(input_hex), string_to_hex(external_key)
 
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -406,10 +419,13 @@ def cfb_encrypt(input, external_key, round, cfb_size):
     vector_hex = vector_hex[cfb_size*2:32] + result_hex
 
     encrypted_hex += result_hex
-  return encrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return encrypted_hex, process_time
 
 # cfb mode: decrypt
 def cfb_decrypt(input_hex, external_key, round, cfb_size):
+  time_start = time.time()
   external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
@@ -433,12 +449,14 @@ def cfb_decrypt(input_hex, external_key, round, cfb_size):
     vector_hex = vector_hex[cfb_size*2:32] + input_hex[i:i+cfb_size*2]
 
     decrypted_hex += result_hex
-  return decrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return decrypted_hex, process_time
 
 # ofb mode: encrypt
-# input: string
-def ofb_encrypt(input, external_key, round, ofb_size):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def ofb_encrypt(input_hex, external_key, round, ofb_size):
+  time_start = time.time()
+  input_hex, external_key_hex = hex_padding(input_hex), string_to_hex(external_key)
 
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -461,10 +479,13 @@ def ofb_encrypt(input, external_key, round, ofb_size):
     result_hex = xor_hex(input_hex[i:i+ofb_size*2], result_hex[0:ofb_size*2])
 
     encrypted_hex += result_hex
-  return encrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return encrypted_hex, process_time
 
 # ofb mode: decrypt
 def ofb_decrypt(input_hex, external_key, round, ofb_size):
+  time_start = time.time()
   external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
@@ -488,12 +509,14 @@ def ofb_decrypt(input_hex, external_key, round, ofb_size):
     result_hex = xor_hex(input_hex[i:i+ofb_size*2], result_hex[0:ofb_size*2])
 
     decrypted_hex += result_hex
-  return decrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return decrypted_hex, process_time
 
 # counter mode: encrypt
-# input: string
-def counter_encrypt(input, external_key, round):
-  input_hex, external_key_hex = string_to_hex(string_padding(input)), string_to_hex(external_key)
+def counter_encrypt(input_hex, external_key, round):
+  time_start = time.time()
+  input_hex, external_key_hex = hex_padding(input_hex), string_to_hex(external_key)
 
   encrypted_hex = ""
   expanded_key_hex = key_expansion(external_key_hex, round)
@@ -514,10 +537,13 @@ def counter_encrypt(input, external_key, round):
     result_hex = xor_hex(input_hex[i:i+32], result_hex)
     encrypted_hex += result_hex
     init_vector_hex = increment_counter(init_vector_hex)
-  return encrypted_hex
+  time_end = time.time()
+  process_time = time_end - time_start
+  return encrypted_hex, process_time
 
 # counter mode: decrypt
 def counter_decrypt(input_hex, external_key, round):
+  time_start = time.time()
   external_key_hex = string_to_hex(external_key)
 
   decrypted_hex = ""
@@ -539,29 +565,6 @@ def counter_decrypt(input_hex, external_key, round):
     result_hex = xor_hex(input_hex[i:i+32], result_hex)
     decrypted_hex += result_hex
     init_vector_hex = increment_counter(init_vector_hex)
-  return decrypted_hex
-
-# main program
-if __name__ == "__main__":
-  input_string = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum. Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of \"de Finibus Bonorum et Malorum\" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, \"Lorem ipsum dolor sit amet..\", comes from a line in section 1.10.32."
-  input_hex = string_to_hex(string_padding(input_string))
-
-  # 16 byte = 128 bit
-  external_key_string = "jKPmNqXoRvSbTdUw"
-
-  # 32 byte = 256 bit
-  # external_key_string = "eYsHnTjPfWqRdGmZxLcVbQaUoIkEpXyn"
-
-  external_key_hex = string_to_hex(external_key_string)
-
-  print("Key length     : " + str(len(external_key_string)))
-  print("Input length   : " + str(len(input_string)))
-
-  print("Input          : " + input_string)
-
-  # computation in hex
-  encrypt_result = ecb_encrypt(input_hex, external_key_string, 10)
-  print("Encrypt result : " + encrypt_result)
-
-  decrypt_result = ecb_decrypt(encrypt_result, external_key_string, 10)
-  print("Decrypt result : " + hex_to_string(decrypt_result))
+  time_end = time.time()
+  process_time = time_end - time_start
+  return decrypted_hex, process_time
