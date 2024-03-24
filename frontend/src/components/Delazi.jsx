@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { MdLockOutline, MdLockOpen } from "react-icons/md";
+import { MdLockOutline, MdLockOpen, MdArrowCircleLeft } from "react-icons/md";
 import Subpage from "./Subpage";
 import TextInput from "./TextInput";
 import FileInput from "./FileInput";
@@ -23,6 +23,10 @@ const Delazi = () => {
   const [rounds, setRounds] = useState("14");
   const [round, setRound] = useState(16);
   const [size, setSize] = useState(2);
+
+  const setInputAsOutput = () => {
+    setUserInput(userOutput);
+  }
 
   
   const validateKey = () => {
@@ -186,6 +190,11 @@ const Delazi = () => {
       const formData = new FormData();
       formData.append("file", fileInput);
       formData.append("key", key);
+      formData.append("round", round);
+      formData.append("mode", mode);
+      if (mode === "cfb" || mode === "ofb") {
+        formData.append("size", size);
+      }
 
       const response = await fetch(
         "http://localhost:8080/delazi_file_decrypt",
@@ -516,7 +525,13 @@ const Delazi = () => {
                 <MdLockOpen size="16" />
                 <span className="text-sm">Decrypt</span>
               </button>
-            </div>            
+            </div>   
+            <button
+              onClick={setInputAsOutput}
+              className="rounded-full flex items-center justify-center w-8 h-8 border border-primary_3 mx-auto mt-3"
+            >
+              <MdArrowCircleLeft size="24" />
+            </button>         
           </div>
 
           {/* output */}
