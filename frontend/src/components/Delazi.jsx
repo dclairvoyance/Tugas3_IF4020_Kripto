@@ -48,6 +48,16 @@ const Delazi = () => {
     setFormat(format);
   };
 
+  const handleKeyLengthChange = (event) => {
+    const keyLength = parseInt(event.target.value);
+    setKeyLength(keyLength);
+    if (keyLength === 128) {
+      setRound(10);
+    } else if (keyLength === 192) {
+      setRound(12);
+    }
+  };
+
   const handleUserInput = (textInput) => {
     setUserInput(textInput);
   };
@@ -377,7 +387,7 @@ const Delazi = () => {
                     type="radio"
                     value={128}
                     checked={keyLength === 128}
-                    onChange={(e) => setKeyLength(parseInt(e.target.value))}
+                    onChange={handleKeyLengthChange}
                   />
                   <label htmlFor="key-128" className="w-full ms-2 text-sm">
                     128
@@ -391,7 +401,7 @@ const Delazi = () => {
                     type="radio"
                     value={192}
                     checked={keyLength === 192}
-                    onChange={(e) => setKeyLength(parseInt(e.target.value))}
+                    onChange={handleKeyLengthChange}
                   />
                   <label htmlFor="key-192" className="w-full ms-2 text-sm">
                     192
@@ -405,7 +415,7 @@ const Delazi = () => {
                     type="radio"
                     value={256}
                     checked={keyLength === 256}
-                    onChange={(e) => setKeyLength(parseInt(e.target.value))}
+                    onChange={handleKeyLengthChange}
                   />
                   <label htmlFor="key-256" className="w-full ms-2 text-sm">
                     256
@@ -562,7 +572,7 @@ const Delazi = () => {
                 <h2 className="items-center ml-1 flex text-lg font-semibold text-white">
                   Time:
                 </h2>
-                <p className="flex text-white items-center text-lg ml-1 -mt-1.5 lg:mt-0">
+                <p className="flex text-white items-center text-lg ml-1 leading-4">
                   {time} ms
                 </p>
               </div>
