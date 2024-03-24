@@ -297,6 +297,7 @@ def ecb_encrypt(input_hex, external_key, round):
     encrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return encrypted_hex, process_time
 
 # ecb mode: decrypt
@@ -325,6 +326,7 @@ def ecb_decrypt(input_hex, external_key, round):
     decrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return decrypted_hex, process_time
 
 # cbc mode: encrypt
@@ -358,6 +360,7 @@ def cbc_encrypt(input_hex, external_key, round):
     encrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return encrypted_hex, process_time
 
 # cbc mode: decrypt
@@ -390,6 +393,7 @@ def cbc_decrypt(input_hex, external_key, round):
     decrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return decrypted_hex, process_time
 
 # cfb mode: encrypt
@@ -421,6 +425,7 @@ def cfb_encrypt(input_hex, external_key, round, cfb_size):
     encrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return encrypted_hex, process_time
 
 # cfb mode: decrypt
@@ -451,6 +456,7 @@ def cfb_decrypt(input_hex, external_key, round, cfb_size):
     decrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return decrypted_hex, process_time
 
 # ofb mode: encrypt
@@ -481,6 +487,7 @@ def ofb_encrypt(input_hex, external_key, round, ofb_size):
     encrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return encrypted_hex, process_time
 
 # ofb mode: decrypt
@@ -511,6 +518,7 @@ def ofb_decrypt(input_hex, external_key, round, ofb_size):
     decrypted_hex += result_hex
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return decrypted_hex, process_time
 
 # counter mode: encrypt
@@ -539,6 +547,7 @@ def counter_encrypt(input_hex, external_key, round):
     init_vector_hex = increment_counter(init_vector_hex)
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return encrypted_hex, process_time
 
 # counter mode: decrypt
@@ -567,4 +576,5 @@ def counter_decrypt(input_hex, external_key, round):
     init_vector_hex = increment_counter(init_vector_hex)
   time_end = time.time()
   process_time = time_end - time_start
+  print(process_time)
   return decrypted_hex, process_time

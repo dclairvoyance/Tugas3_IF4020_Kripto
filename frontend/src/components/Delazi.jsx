@@ -127,6 +127,11 @@ const Delazi = () => {
       const formData = new FormData();
       formData.append("file", fileInput);
       formData.append("key", key);
+      formData.append("round", round);
+      formData.append("mode", mode);
+      if (mode === "cfb" || mode === "ofb") {
+        formData.append("size", size);
+      }
 
       const response = await fetch(
         "http://localhost:8080/delazi_file_encrypt",
@@ -150,7 +155,7 @@ const Delazi = () => {
 
       reader.readAsText(blob, "ASCII");
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error: ", error);
       setUserOutput("Error downloading file.");
     }
   };
@@ -233,7 +238,7 @@ const Delazi = () => {
 
       reader.readAsText(blob, "ASCII");
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error: ", error);
       setUserOutput("Error downloading file.");
     }
   };
@@ -573,7 +578,7 @@ const Delazi = () => {
                   Time:
                 </h2>
                 <p className="flex text-white items-center text-lg ml-1 leading-4">
-                  {time} ms
+                  {time} s
                 </p>
               </div>
               {/* download as txt file */}
